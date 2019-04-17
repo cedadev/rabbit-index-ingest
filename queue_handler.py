@@ -12,15 +12,12 @@ import pika
 import os
 import configparser
 import re
-
-from multiprocessing.pool import ThreadPool
-
-
-
+import uuid
+import threading
+from utils.path_tools import PathTools
 
 
 class QueueHandler:
-
     # Regex patterns
     deposit = re.compile("^\d{4}[-](\d{2})[-]\d{2}.*:DEPOSIT:")
     deletion = re.compile("^\d{4}[-](\d{2})[-]\d{2}.*:REMOVE:")
@@ -30,34 +27,41 @@ class QueueHandler:
     readme00 = re.compile("^\d{4}[-](\d{2})[-]\d{2}.*00README:")
 
     def __init__(self, conf):
+
+        # Get the username and password for rabbit
         rabbit_user = conf.get("server", "user")
         rabbit_password = conf.get("server", "password")
 
-        rabbit_server = conf.get("server", "name")
-        rabbit_vhost = conf.get("server", "vhost")
-        rabbit_route = conf.get("server", "log_exchange")
+        # Get the server variables
+        self.rabbit_server = conf.get("server", "name")
+        self.rabbit_vhost = conf.get("server", "vhost")
 
-        credentials = pika.PlainCredentials(rabbit_user, rabbit_password)
+        # Create the credentials object
+        self.credentials = pika.PlainCredentials(rabbit_user, rabbit_password)
 
-        connection = pika.BlockingConnection(
-            pika.ConnectionParameters(
-                rabbit_server,
-                credentials=credentials,
-                virtual_host=rabbit_vhost,
-                heartbeat=50
+        # Set other shared attributes
+        self.rabbit_route = conf.get("server", "log_exchange")
+        self.thread_map = {}
+        self.queue_name = f'elasticsearch_update_queue_{uuid.uuid4()}'
+        self.path_tools = PathTools()
+
+
+        # Create thread pool
+        thread_list = []
+        for i in range(5):
+            thread = threading.Thread(
+                target=self.run,
+                name=f'Thread-{i}',
+                daemon=True
             )
-        )
+            thread_list.append(thread)
 
-        self.channel = connection.channel()
+        for thread in thread_list:
+            self.thread_map[thread.ident] = thread.name
+            thread.start()
 
-        self.channel.exchange_declare(exchange=rabbit_route,
-                                 exchange_type='fanout')
-
-        result = self.channel.queue_declare(queue='', exclusive=True)
-        self.queue_name = result.method.queue
-        self.channel.queue_bind(exchange=rabbit_route, queue=self.queue_name)
-
-        print(' [*] Waiting for logs. To exit press CTRL+C')
+        for thread in thread_list:
+            thread.join()
 
     def callback(self, ch, method, properties, body):
         # Decode the byte string to utf-8
@@ -75,7 +79,7 @@ class QueueHandler:
 
         if self.deposit.match(body):
             print('deposit')
-            #Add to readme list if the deposited file is a 00README
+            # Add to readme list if the deposited file is a 00README
             if self.readme00.match(body):
                 print('readme')
 
@@ -91,21 +95,39 @@ class QueueHandler:
         elif self.symlink.match(body):
             print('symlink')
 
+    # def run(self):
 
     def run(self):
-        self.channel.basic_consume(queue=self.queue_name,
-                                   on_message_callback=self.callback,
-                                   auto_ack=False)
 
-        self.channel.start_consuming()
+        # Start the rabbitMQ connection
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                self.rabbit_server,
+                credentials=self.credentials,
+                virtual_host=self.rabbit_vhost,
+                heartbeat=50
+            )
+        )
 
+        # Create a new channel per thread
+        channel = connection.channel()
+
+        # Connect the channel to the exchange
+        channel.exchange_declare(exchange=self.rabbit_route, exchange_type='fanout')
+
+        channel.queue_declare(queue=self.queue_name, auto_delete=True)
+        channel.queue_bind(exchange=self.rabbit_route, queue=self.queue_name)
+
+        channel.basic_consume(queue=self.queue_name,
+                              on_message_callback=self.callback,
+                              auto_ack=False)
+
+        channel.start_consuming()
 
 
 if __name__ == '__main__':
-
-
     CONFIG_FILE = os.path.join(os.environ["HOME"], ".deposit_server.cfg")
     conf = configparser.ConfigParser()
     conf.read(CONFIG_FILE)
 
-    QueueHandler(conf).run()
+    QueueHandler(conf)

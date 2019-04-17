@@ -10,9 +10,7 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 from ceda_elasticsearch_tools.core.log_reader import SpotMapping
 import os
-import json
 import requests
-
 
 class PathTools:
 
@@ -22,7 +20,7 @@ class PathTools:
 
         self.spots = SpotMapping()
 
-        self.moles_mapping = json.loads(requests.get(moles_mapping_url).json())
+        self.moles_mapping = requests.get(moles_mapping_url).json()
 
 
     def generate_path_metadata(self, path):
@@ -104,11 +102,14 @@ class PathTools:
 
     def update_mapping(self):
 
+        successful = True
         # Update the moles mapping
-        updated_mapping = json.loads(requests.get(self.moles_mapping_url).json())
-
-        if updated_mapping:
-            self.moles_mapping.update(updated_mapping)
+        try:
+            self.moles_mapping = requests.get(self.moles_mapping_url).json()
+        except ValueError:
+            successful = False
 
         # Update the spot mapping
         self.spots = SpotMapping()
+
+        return successful

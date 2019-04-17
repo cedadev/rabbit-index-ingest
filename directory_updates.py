@@ -18,7 +18,12 @@ import os
 
 class DirectoryUpdateHandler:
 
-    def __init__(self, refresh_interval=30):
+    def __init__(self, path_tools, refresh_interval=30):
+        """
+
+        :param path_tools: An initialised PathTools object
+        :param refresh_interval: Time in minutes before refreshing the mappings
+        """
 
         # Read in the config file
         conf = ConfigParser().read('index_updater.ini')
@@ -41,7 +46,7 @@ class DirectoryUpdateHandler:
         self.refreshing = False
 
         # Initialise Path Tools
-        self.pt = PathTools(moles_mapping_url=)
+        self.pt = path_tools
 
     def process_event(self, action, path):
         """
@@ -86,12 +91,14 @@ class DirectoryUpdateHandler:
             # mappings at the same time
             self.refreshing = True
 
-            self.pt.update_mapping()
+            successful = self.pt.update_mapping()
 
             self._process_spot_roots()
 
-            # Reset timer and refreshing boolean
-            self.update_time = datetime.now()
+            # Reset timer if mapping update successful and reset refreshing boolean
+            if successful:
+                self.update_time = datetime.now()
+
             self.refreshing = False
 
 
