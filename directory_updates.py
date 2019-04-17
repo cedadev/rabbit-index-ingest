@@ -33,7 +33,7 @@ class DirectoryUpdateHandler:
 
         # Initialise the Elasticsearch connection
         self.index_updater = CedaDirs(
-            index=conf.get('elasticsearch', 'es-index'),
+            index=conf.get('directory-index', 'es-index'),
             host_url=conf.get('elasticsearch', 'es-host'),
             **{'http_auth': (
                 conf.get('elasticsearch', 'es-user'),
@@ -48,7 +48,7 @@ class DirectoryUpdateHandler:
         # Initialise Path Tools
         self.pt = path_tools
 
-    def process_event(self, action, path):
+    def process_event(self, path, action):
         """
         Takes the events from rabbit and sends them to the appropriate processor
 
