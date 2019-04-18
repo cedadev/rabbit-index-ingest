@@ -15,6 +15,8 @@ import re
 import uuid
 import threading
 from utils.path_tools import PathTools
+from fbs_updates import FBSUpdateHandler
+from directory_updates import DirectoryUpdateHandler
 
 
 class QueueHandler:
@@ -45,6 +47,9 @@ class QueueHandler:
         self.queue_name = f'elasticsearch_update_queue_{uuid.uuid4()}'
         self.path_tools = PathTools()
 
+        # Init event handlers
+        self.directory_handler = DirectoryUpdateHandler(path_tools=self.path_tools)
+        self.fbs_handler = FBSUpdateHandler(path_tools=self.path_tools)
 
         # Create thread pool
         thread_list = []
@@ -78,22 +83,22 @@ class QueueHandler:
         # message = ":".join(split_line[6:])
 
         if self.deposit.match(body):
-            print('deposit')
-            # Add to readme list if the deposited file is a 00README
+            self.fbs_handler.process_event(filepath, action)
+
             if self.readme00.match(body):
-                print('readme')
+                self.directory_handler.process_event(filepath, action)
 
         elif self.deletion.match(body):
-            print('delete')
+            self.fbs_handler.process_event(filepath, action)
 
         elif self.mkdir.match(body):
-            print('mkdir')
+            self.directory_handler.process_event(filepath, action)
 
         elif self.rmdir.match(body):
-            print('rmdir')
+            self.directory_handler.process_event(filepath, action)
 
         elif self.symlink.match(body):
-            print('symlink')
+            self.directory_handler.process_event(filepath, action)
 
     # def run(self):
 
