@@ -11,7 +11,6 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 from ceda_elasticsearch_tools.index_tools.index_updaters import CedaDirs
 from configparser import ConfigParser
 from datetime import datetime
-from utils.path_tools import PathTools
 import hashlib
 import os
 
@@ -26,7 +25,9 @@ class DirectoryUpdateHandler:
         """
 
         # Read in the config file
-        conf = ConfigParser().read('index_updater.ini')
+        conf = ConfigParser()
+        base = os.path.dirname(__file__)
+        conf.read(os.path.join(base, '../conf/index_updater.ini'))
 
         # Convert refresh interval to seconds
         self.refresh_interval = refresh_interval * 60

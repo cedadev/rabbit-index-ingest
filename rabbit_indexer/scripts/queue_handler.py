@@ -14,9 +14,9 @@ import configparser
 import re
 import uuid
 import threading
-from utils.path_tools import PathTools
-from fbs_updates import FBSUpdateHandler
-from directory_updates import DirectoryUpdateHandler
+from rabbit_indexer.utils.path_tools import PathTools
+from rabbit_indexer.index_updaters.fbs_updates import FBSUpdateHandler
+from rabbit_indexer.index_updaters.directory_updates import DirectoryUpdateHandler
 
 
 class QueueHandler:
@@ -45,11 +45,13 @@ class QueueHandler:
         self.rabbit_route = conf.get("server", "log_exchange")
         self.thread_map = {}
         self.queue_name = f'elasticsearch_update_queue_{uuid.uuid4()}'
-        self.path_tools = PathTools()
+        self.path_tools = PathTools(moles_mapping_url='http://catalogue-test.ceda.ac.uk/api/v0/obs/all')
 
         # Init event handlers
         self.directory_handler = DirectoryUpdateHandler(path_tools=self.path_tools)
         self.fbs_handler = FBSUpdateHandler(path_tools=self.path_tools)
+
+    def activate_thread_pool(self):
 
         # Create thread pool
         thread_list = []
@@ -83,22 +85,28 @@ class QueueHandler:
         # message = ":".join(split_line[6:])
 
         if self.deposit.match(body):
-            self.fbs_handler.process_event(filepath, action)
+            print(action)
+            # self.fbs_handler.process_event(filepath, action)
 
             if self.readme00.match(body):
-                self.directory_handler.process_event(filepath, action)
+                # self.directory_handler.process_event(filepath, action)
+                print(action)
 
         elif self.deletion.match(body):
-            self.fbs_handler.process_event(filepath, action)
+            # self.fbs_handler.process_event(filepath, action)
+            print(action)
 
         elif self.mkdir.match(body):
-            self.directory_handler.process_event(filepath, action)
+            # self.directory_handler.process_event(filepath, action)
+            print(action)
 
         elif self.rmdir.match(body):
-            self.directory_handler.process_event(filepath, action)
+            # self.directory_handler.process_event(filepath, action)
+            print(action)
 
         elif self.symlink.match(body):
-            self.directory_handler.process_event(filepath, action)
+            # self.directory_handler.process_event(filepath, action)
+            print(action)
 
     # def run(self):
 
@@ -123,16 +131,20 @@ class QueueHandler:
         channel.queue_declare(queue=self.queue_name, auto_delete=True)
         channel.queue_bind(exchange=self.rabbit_route, queue=self.queue_name)
 
-        channel.basic_consume(queue=self.queue_name,
-                              on_message_callback=self.callback,
-                              auto_ack=False)
+        channel.basic_consume(queue=self.queue_name, on_message_callback=self.callback,  auto_ack=False)
 
         channel.start_consuming()
 
 
-if __name__ == '__main__':
+def main():
+
     CONFIG_FILE = os.path.join(os.environ["HOME"], ".deposit_server.cfg")
     conf = configparser.ConfigParser()
     conf.read(CONFIG_FILE)
 
-    QueueHandler(conf)
+    QueueHandler(conf).activate_thread_pool()
+
+if __name__ == '__main__':
+    main()
+
+

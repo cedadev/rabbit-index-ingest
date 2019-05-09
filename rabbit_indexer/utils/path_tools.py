@@ -7,10 +7,10 @@ __copyright__ = 'Copyright 2018 United Kingdom Research and Innovation'
 __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
-
 from ceda_elasticsearch_tools.core.log_reader import SpotMapping
 import os
 import requests
+from json.decoder import JSONDecodeError
 
 class PathTools:
 
@@ -20,7 +20,11 @@ class PathTools:
 
         self.spots = SpotMapping()
 
-        self.moles_mapping = requests.get(moles_mapping_url).json()
+        try:
+            self.moles_mapping = requests.get(moles_mapping_url).json()
+        except JSONDecodeError as e:
+            import sys
+            raise ConnectionError(f'Could not connect to {moles_mapping_url} to get moles mapping') from e
 
 
     def generate_path_metadata(self, path):
@@ -30,7 +34,7 @@ class PathTools:
         :return:
         """
         if not os.path.isdir(path):
-            return None,None
+            return None, None
 
         # See if the path is a symlink
         link = os.path.islink(path)
@@ -70,7 +74,6 @@ class PathTools:
 
         return dir_meta, dir_meta['link']
 
-
     def get_moles_record_metadata(self, path):
         """
         Try and find metadata for a MOLES record associated with the path.
@@ -95,10 +98,10 @@ class PathTools:
         :return: Readme contents
         """
         if '00README' in os.listdir(path):
-            with open(os.path.join(path,'00README')) as reader:
+            with open(os.path.join(path, '00README')) as reader:
                 content = reader.read()
 
-            return content.decode('utf-8','ignore').encode('utf-8')
+            return content.decode('utf-8', 'ignore').encode('utf-8')
 
     def update_mapping(self):
 

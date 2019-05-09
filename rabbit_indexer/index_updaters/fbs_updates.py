@@ -12,7 +12,8 @@ from configparser import ConfigParser
 from ceda_elasticsearch_tools.index_tools.index_updaters import CedaFbi
 import hashlib
 from datetime import datetime
-from fbs.proc.file_handlers.handler_picker import HandlerPicker
+#from fbs.proc.file_handlers.handler_picker import HandlerPicker
+import os
 
 
 class FBSUpdateHandler:
@@ -23,9 +24,12 @@ class FBSUpdateHandler:
 
     def __init__(self, path_tools, refresh_interval=30):
         # Read in the config file
-        conf = ConfigParser().read('index_updater.ini')
+        base = os.path.dirname(__file__)
+
+        conf = ConfigParser()
+        conf.read(os.path.join(base, '../conf/index_updater.ini'))
         self.calculate_md5 = conf.getboolean('files-index', 'calculate-md5')
-        self.handler_factory = HandlerPicker()
+        # self.handler_factory = HandlerPicker()
         self.level = conf.get('files-index', 'scan-level')
 
         # Convert refresh interval to seconds
