@@ -74,7 +74,6 @@ class DirectoryUpdateHandler:
 
             self._process_readmes(path)
 
-
     def _update_mappings(self):
         """
         Need to make sure that the code is using the most up to date mapping, either in
@@ -102,7 +101,6 @@ class DirectoryUpdateHandler:
 
             self.refreshing = False
 
-
     def _process_creations(self, path):
         """
         Process the creation of a new directory
@@ -116,10 +114,12 @@ class DirectoryUpdateHandler:
         # Index new directory
         if metadata:
             self.index_updater.add_dirs(
-                list({
-                    'id': self.pt.generate_id(path),
-                    'document': metadata
-                })
+                [
+                    {
+                        'id': self.pt.generate_id(path),
+                        'document': metadata
+                    }
+                ]
             )
 
     def _process_deletions(self, path):
@@ -131,9 +131,11 @@ class DirectoryUpdateHandler:
 
         # Delete directory
         self.index_updater.delete_dirs(
-            list({
-                "id": self.pt.generate_id(path)
-            })
+            [
+                {
+                    "id": self.pt.generate_id(path)
+                }
+            ]
         )
 
     def _process_symlinks(self, path):
@@ -149,10 +151,12 @@ class DirectoryUpdateHandler:
         # Index the symlink
         if metadata:
             self.index_updater.add_dirs(
-                list({
-                    'id': self.pt.generate_id(path),
-                    'document': metadata
-                })
+                [
+                    {
+                        'id': self.pt.generate_id(path),
+                        'document': metadata
+                    }
+                ]
             )
 
     def _process_readmes(self, path):
@@ -170,10 +174,12 @@ class DirectoryUpdateHandler:
 
         if content:
             self.index_updater.update_readmes(
-                list({
-                    "id": self.pt.generate_id(path),
-                    "document": {"readme": content}
-                })
+                [
+                    {
+                        "id": self.pt.generate_id(path),
+                        "document": {"readme": content}
+                    }
+                ]
             )
 
     def _process_spot_roots(self):
