@@ -12,6 +12,7 @@ from configparser import RawConfigParser
 from ceda_elasticsearch_tools.index_tools.index_updaters import CedaFbi
 from datetime import datetime
 from fbs.proc.file_handlers.handler_picker import HandlerPicker
+from fbs.proc.common_util.util import cfg_read
 import os
 
 
@@ -35,7 +36,7 @@ class FBSUpdateHandler:
         conf = RawConfigParser()
         conf.read(os.path.join(base, '../conf/index_updater.ini'))
         self.calculate_md5 = conf.getboolean('files-index', 'calculate-md5')
-        self.handler_factory = HandlerPicker()
+        self.handler_factory = HandlerPicker(cfg_read(os.path.join(base, '../conf/index_updater.ini')))
         self.level = conf.get('files-index', 'scan-level')
 
         # Initialise the Elasticsearch connection
