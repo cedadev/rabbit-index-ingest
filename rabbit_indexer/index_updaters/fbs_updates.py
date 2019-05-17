@@ -8,7 +8,7 @@ __copyright__ = 'Copyright 2018 United Kingdom Research and Innovation'
 __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
-from configparser import ConfigParser
+from configparser import RawConfigParser
 from ceda_elasticsearch_tools.index_tools.index_updaters import CedaFbi
 import hashlib
 from datetime import datetime
@@ -26,7 +26,7 @@ class FBSUpdateHandler:
         # Read in the config file
         base = os.path.dirname(__file__)
 
-        conf = ConfigParser()
+        conf = RawConfigParser()
         conf.read(os.path.join(base, '../conf/index_updater.ini'))
         self.calculate_md5 = conf.getboolean('files-index', 'calculate-md5')
         # self.handler_factory = HandlerPicker()

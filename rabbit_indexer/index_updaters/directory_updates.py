@@ -9,7 +9,7 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 from ceda_elasticsearch_tools.index_tools.index_updaters import CedaDirs
-from configparser import ConfigParser
+from configparser import RawConfigParser
 from datetime import datetime
 import os
 
@@ -24,7 +24,7 @@ class DirectoryUpdateHandler:
         """
 
         # Read in the config file
-        conf = ConfigParser()
+        conf = RawConfigParser()
         base = os.path.dirname(__file__)
         conf.read(os.path.join(base, '../conf/index_updater.ini'))
 
