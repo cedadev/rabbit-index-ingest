@@ -140,7 +140,7 @@ def main():
 
     parser = argparse.ArgumentParser(description='Begin the rabbit based deposit indexer')
 
-    parser.add_argument('--config', dest='config', help=)
+    parser.add_argument('--config', dest='config', help='Path to config file for rabbit connection')
 
 
     CONFIG_FILE = os.path.join(os.environ["HOME"], ".deposit_server.cfg")
