@@ -11,7 +11,6 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 from ceda_elasticsearch_tools.index_tools.index_updaters import CedaDirs
 from configparser import ConfigParser
 from datetime import datetime
-import hashlib
 import os
 
 
@@ -75,6 +74,7 @@ class DirectoryUpdateHandler:
 
             self._process_readmes(path)
 
+
     def _update_mappings(self):
         """
         Need to make sure that the code is using the most up to date mapping, either in
@@ -117,7 +117,7 @@ class DirectoryUpdateHandler:
         if metadata:
             self.index_updater.add_dirs(
                 list({
-                    'id': hashlib.sha1(path).hexdigest(),
+                    'id': self.pt.generate_id(path),
                     'document': metadata
                 })
             )
@@ -132,7 +132,7 @@ class DirectoryUpdateHandler:
         # Delete directory
         self.index_updater.delete_dirs(
             list({
-                "id": hashlib.sha1(path).hexdigest()
+                "id": self.pt.generate_id(path)
             })
         )
 
@@ -150,7 +150,7 @@ class DirectoryUpdateHandler:
         if metadata:
             self.index_updater.add_dirs(
                 list({
-                    'id': hashlib.sha1(path).hexdigest(),
+                    'id': self.pt.generate_id(path),
                     'document': metadata
                 })
             )
@@ -171,7 +171,7 @@ class DirectoryUpdateHandler:
         if content:
             self.index_updater.update_readmes(
                 list({
-                    "id": hashlib.sha1(path).hexdigest(),
+                    "id": self.pt.generate_id(path),
                     "document": {"readme": content}
                 })
             )
@@ -191,7 +191,7 @@ class DirectoryUpdateHandler:
 
             if metadata:
                 content_list.append({
-                    "id": hashlib.sha1(spot).hexdigest(),
+                    "id": self.pt.generate_id(spot),
                     "document": metadata
                 })
 

@@ -11,6 +11,7 @@ from ceda_elasticsearch_tools.core.log_reader import SpotMapping
 import os
 import requests
 from json.decoder import JSONDecodeError
+import hashlib
 
 class PathTools:
 
@@ -101,7 +102,7 @@ class PathTools:
             with open(os.path.join(path, '00README')) as reader:
                 content = reader.read()
 
-            return content.decode('utf-8', 'ignore').encode('utf-8')
+            return content.encode(errors='ignore')
 
     def update_mapping(self):
 
@@ -116,3 +117,13 @@ class PathTools:
         self.spots = SpotMapping()
 
         return successful
+
+    @staticmethod
+    def generate_id(path):
+        """
+        Take a path, encode to utf-8 (ignoring non-utf8 chars) and return hash
+        :param path:
+        :return: hash
+        """
+
+        return hashlib.sha1(path.encode(errors='ignore')).hexdigest()

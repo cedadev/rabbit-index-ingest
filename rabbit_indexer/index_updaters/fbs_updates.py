@@ -112,13 +112,12 @@ class FBSUpdateHandler:
             if doc is not None:
 
                 spot = self.pt.spots.get_spot(path)
-                id = hashlib.sha1(path).hexdigest()
 
                 if spot is not None:
                     doc[0]['info']['spot_name'] = spot
 
             indexing_list = [{
-                'id': id,
+                'id': self.pt.generate_id(path),
                 'document': doc
             }]
 
@@ -147,7 +146,7 @@ class FBSUpdateHandler:
         """
 
         deletion_list = list(
-            {'id': hashlib.sha1(path).hexdigest()}
+            {'id': self.pt.generate_id(path)}
         )
 
         self.index_updater.delete_files(deletion_list)

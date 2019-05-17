@@ -17,6 +17,7 @@ import threading
 from rabbit_indexer.utils.path_tools import PathTools
 from rabbit_indexer.index_updaters.fbs_updates import FBSUpdateHandler
 from rabbit_indexer.index_updaters.directory_updates import DirectoryUpdateHandler
+import argparse
 
 
 class QueueHandler:
@@ -85,30 +86,29 @@ class QueueHandler:
         # message = ":".join(split_line[6:])
 
         if self.deposit.match(body):
-            print(action)
-            # self.fbs_handler.process_event(filepath, action)
+            print(filepath)
+            self.fbs_handler.process_event(filepath, action)
 
             if self.readme00.match(body):
-                # self.directory_handler.process_event(filepath, action)
-                print(action)
+                self.directory_handler.process_event(filepath, action)
+                print(filepath)
 
         elif self.deletion.match(body):
-            # self.fbs_handler.process_event(filepath, action)
-            print(action)
+            self.fbs_handler.process_event(filepath, action)
+            print(filepath)
 
         elif self.mkdir.match(body):
-            # self.directory_handler.process_event(filepath, action)
-            print(action)
+            self.directory_handler.process_event(filepath, action)
+            print(filepath)
 
         elif self.rmdir.match(body):
-            # self.directory_handler.process_event(filepath, action)
-            print(action)
+            self.directory_handler.process_event(filepath, action)
+            print(filepath)
 
         elif self.symlink.match(body):
-            # self.directory_handler.process_event(filepath, action)
-            print(action)
+            self.directory_handler.process_event(filepath, action)
+            print(filepath)
 
-    # def run(self):
 
     def run(self):
 
@@ -137,6 +137,11 @@ class QueueHandler:
 
 
 def main():
+
+    parser = argparse.ArgumentParser(description='Begin the rabbit based deposit indexer')
+
+    parser.add_argument('--config', dest='config', help=)
+
 
     CONFIG_FILE = os.path.join(os.environ["HOME"], ".deposit_server.cfg")
     conf = configparser.ConfigParser()
