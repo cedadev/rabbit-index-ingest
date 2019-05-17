@@ -120,12 +120,12 @@ class FBSUpdateHandler:
                 if spot is not None:
                     doc[0]['info']['spot_name'] = spot
 
-            indexing_list = [{
-                'id': self.pt.generate_id(path),
-                'document': doc
-            }]
+                indexing_list = [{
+                    'id': self.pt.generate_id(path),
+                    'document': self._create_body(doc)
+                }]
 
-            self.index_updater.add_files(indexing_list)
+                self.index_updater.add_files(indexing_list)
 
     @staticmethod
     def _create_body(file_data):
@@ -133,13 +133,13 @@ class FBSUpdateHandler:
         data_length = len(file_data)
 
         doc = file_data[0]
+        if data_length > 1:
+            if file_data[1] is not None:
+                doc['info']['phenomena'] = file_data[1]
 
-        if file_data[1] is not None:
-            doc['info']['phenomena'] = file_data[1]
-
-        if data_length == 3:
-            if file_data[2] is not None:
-                doc['info']['spatial'] = file_data[2]
+            if data_length == 3:
+                if file_data[2] is not None:
+                    doc['info']['spatial'] = file_data[2]
 
         return doc
 

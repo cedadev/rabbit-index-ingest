@@ -52,11 +52,11 @@ class QueueHandler:
         self.directory_handler = DirectoryUpdateHandler(path_tools=self.path_tools)
         self.fbs_handler = FBSUpdateHandler(path_tools=self.path_tools)
 
-    def activate_thread_pool(self):
+    def activate_thread_pool(self, nthreads=6):
 
         # Create thread pool
         thread_list = []
-        for i in range(5):
+        for i in range(nthreads):
             thread = threading.Thread(
                 target=self.run,
                 name=f'Thread-{i}',
@@ -142,6 +142,7 @@ def main():
     parser = argparse.ArgumentParser(description='Begin the rabbit based deposit indexer')
 
     parser.add_argument('--config', dest='config', help='Path to config file for rabbit connection')
+    parser.add_argument('--threads', dest='nthreads', type=int, help='Number of threads in the threadpool', default=6, required=False)
 
     args = parser.parse_args()
 
@@ -149,7 +150,7 @@ def main():
     conf = configparser.RawConfigParser()
     conf.read(CONFIG_FILE)
 
-    QueueHandler(conf).activate_thread_pool()
+    QueueHandler(conf).activate_thread_pool(nthreads=args.nthreads)
 
 if __name__ == '__main__':
     main()
