@@ -10,9 +10,8 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 from configparser import RawConfigParser
 from ceda_elasticsearch_tools.index_tools.index_updaters import CedaFbi
-import hashlib
 from datetime import datetime
-#from fbs.proc.file_handlers.handler_picker import HandlerPicker
+from fbs.proc.file_handlers.handler_picker import HandlerPicker
 import os
 
 
@@ -23,17 +22,21 @@ class FBSUpdateHandler:
     """
 
     def __init__(self, path_tools, refresh_interval=30):
+        """
+        Initialise the FBS Update Handler
+
+        :param path_tools: PathTools Object
+        :param refresh_interval: Time in minutes to refresh mappings
+        """
+
         # Read in the config file
         base = os.path.dirname(__file__)
 
         conf = RawConfigParser()
         conf.read(os.path.join(base, '../conf/index_updater.ini'))
         self.calculate_md5 = conf.getboolean('files-index', 'calculate-md5')
-        # self.handler_factory = HandlerPicker()
+        self.handler_factory = HandlerPicker()
         self.level = conf.get('files-index', 'scan-level')
-
-        # Convert refresh interval to seconds
-        # self.refresh_interval = refresh_interval * 60
 
         # Initialise the Elasticsearch connection
         es_auth = {'http_auth': (
