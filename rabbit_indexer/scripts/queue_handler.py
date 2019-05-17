@@ -138,13 +138,15 @@ class QueueHandler:
 
 def main():
 
+    # Add command line argument to get rabbit config file.
     parser = argparse.ArgumentParser(description='Begin the rabbit based deposit indexer')
 
     parser.add_argument('--config', dest='config', help='Path to config file for rabbit connection')
 
+    args = parser.parse_args()
 
-    CONFIG_FILE = os.path.join(os.environ["HOME"], ".deposit_server.cfg")
-    conf = configparser.ConfigParser()
+    CONFIG_FILE = args.config
+    conf = configparser.RawConfigParser()
     conf.read(CONFIG_FILE)
 
     QueueHandler(conf).activate_thread_pool()
