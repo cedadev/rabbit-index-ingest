@@ -19,9 +19,14 @@ from rabbit_indexer.index_updaters.directory_updates import DirectoryUpdateHandl
 import argparse
 import logging
 import os
+import functools
 
 
 class QueueHandler:
+    """
+    Organises the thread pool and callbacks for the Rabbit Messages
+    """
+
     # Regex patterns
     deposit = re.compile("^\d{4}[-](\d{2})[-]\d{2}.*:DEPOSIT:")
     deletion = re.compile("^\d{4}[-](\d{2})[-]\d{2}.*:REMOVE:")
@@ -53,42 +58,69 @@ class QueueHandler:
         self.directory_handler = DirectoryUpdateHandler(path_tools=self.path_tools)
         self.fbs_handler = FBSUpdateHandler(path_tools=self.path_tools)
 
-        # Setup logging
-        logging_path = conf.get('logging', 'filepath')
-        logging_file = conf.get('logging', 'filename')
-        logging_level = conf.get('logging', 'log-level')
+    def _connect(self):
+        """
+        Start Pika connection to server. This is run in each thread.
 
-        logging.basicConfig(
-            filename=os.path.join(logging_path, logging_file),
-            level=getattr(logging, logging_level.upper())
+        :return: pika channel
+        """
+
+        # Start the rabbitMQ connection
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                self.rabbit_server,
+                credentials=self.credentials,
+                virtual_host=self.rabbit_vhost,
+                heartbeat=300
+            )
         )
 
+        # Create a new channel
+        channel = connection.channel()
 
-    def activate_thread_pool(self, nthreads=6):
+        # Connect the channel to the exchange
+        channel.exchange_declare(exchange=self.rabbit_route, exchange_type='fanout')
 
-        # Create thread pool
-        thread_list = []
-        for i in range(nthreads):
-            thread = threading.Thread(
-                target=self.run,
-                name=f'Thread-{i}',
-                daemon=True
-            )
-            thread_list.append(thread)
+        # Declare queue
+        channel.queue_declare(queue=self.queue_name, auto_delete=True)
+        channel.queue_bind(exchange=self.rabbit_route, queue=self.queue_name)
 
-        for thread in thread_list:
-            self.thread_map[thread.ident] = thread.name
-            thread.start()
+        # Set callback
+        callback = functools.partial(self._callback, connection=connection)
+        channel.basic_consume(queue=self.queue_name, on_message_callback=callback, auto_ack=False)
 
-        for thread in thread_list:
-            thread.join()
+        return channel
 
-    def callback(self, ch, method, properties, body):
+    @staticmethod
+    def _acknowledge_message(channel, delivery_tag):
+        """
+        Acknowledge message
+
+        :param channel: Channel which message came from
+        :param delivery_tag: Message id
+        """
+
+        if channel.is_open:
+            channel.basic_ack(delivery_tag)
+
+    def _callback(self, ch, method, properties, body, connection):
+        """
+        Callback to run during basic consume routine.
+        Arguments provided by pika standard message callback method
+
+        :param ch: Channel
+        :param method: pika method
+        :param properties: pika header properties
+        :param body: Message body
+        :param connection: Pika connection
+        """
+
         # Decode the byte string to utf-8
         body = body.decode('utf-8')
 
         split_line = body.strip().split(":")
 
+        # Several unused splits but here to preserve the format of the message
         # date_hour = split_line[0]
         # min = split_line[1]
         # sec = split_line[2]
@@ -100,61 +132,64 @@ class QueueHandler:
         try:
 
             if self.deposit.match(body):
-                print(filepath)
                 self.fbs_handler.process_event(filepath, action)
 
                 if self.readme00.match(body):
                     self.directory_handler.process_event(filepath, action)
-                    print(filepath)
 
             elif self.deletion.match(body):
                 self.fbs_handler.process_event(filepath, action)
-                print(filepath)
 
             elif self.mkdir.match(body):
                 self.directory_handler.process_event(filepath, action)
-                print(filepath)
 
             elif self.rmdir.match(body):
                 self.directory_handler.process_event(filepath, action)
-                print(filepath)
 
             elif self.symlink.match(body):
                 self.directory_handler.process_event(filepath, action)
-                print(filepath)
+
+            # Acknowledge message
+            cb = functools.partial(self._acknowledge_message, ch, method.delivery_tag)
+            connection.add_callback_threadsafe(cb)
 
         except Exception as e:
+            # Catch all exceptions in the scanning code and log them
             logging.error(f'Error occurred while scanning: {filepath}', exc_info=e)
 
-    def _connect(self):
+    def activate_thread_pool(self, nthreads=6):
         """
-        Start Pika connection to server
-        :return: pika connection channel
+        Create the thread pool and set them running
+        :param nthreads: Number of threads in the pool
         """
-        # Start the rabbitMQ connection
-        connection = pika.BlockingConnection(
-            pika.ConnectionParameters(
-                self.rabbit_server,
-                credentials=self.credentials,
-                virtual_host=self.rabbit_vhost,
-                heartbeat=300
+
+        # Create thread pool
+        thread_list = []
+        for i in range(nthreads):
+            thread = threading.Thread(
+                target=self.run,
+                name=f'Thread-{i}',
+                daemon=True
             )
-        )
+            thread_list.append(thread)
 
-        # Create a new channel per thread
-        channel = connection.channel()
+        # Start the threads
+        for thread in thread_list:
+            self.thread_map[thread.ident] = thread.name
+            thread.start()
 
-        # Connect the channel to the exchange
-        channel.exchange_declare(exchange=self.rabbit_route, exchange_type='fanout')
-
-        channel.queue_declare(queue=self.queue_name, auto_delete=True)
-        channel.queue_bind(exchange=self.rabbit_route, queue=self.queue_name)
-
-        channel.basic_consume(queue=self.queue_name, on_message_callback=self.callback, auto_ack=False)
-
-        return channel
+        # Join the completed threads
+        for thread in thread_list:
+            thread.join()
 
     def run(self):
+        """
+        Method to run when thread is started. Creates an AMQP connection for each thread
+        and sets some exception handling.
+
+        A common exception which occurs is StreamLostError. The connection should get reset if that happens.
+        :return:
+        """
         while True:
             channel = self._connect()
 
@@ -178,7 +213,8 @@ class QueueHandler:
 
 
 def main():
-    # Add command line argument to get rabbit config file.
+
+    # Command line arguments to get rabbit config file.
     parser = argparse.ArgumentParser(description='Begin the rabbit based deposit indexer')
 
     parser.add_argument('--config', dest='config', help='Path to config file for rabbit connection')
@@ -190,6 +226,16 @@ def main():
     CONFIG_FILE = args.config
     conf = configparser.RawConfigParser()
     conf.read(CONFIG_FILE)
+
+    # Setup logging
+    logging_path = conf.get('logging', 'filepath')
+    logging_file = conf.get('logging', 'filename')
+    logging_level = conf.get('logging', 'log-level')
+
+    logging.basicConfig(
+        filename=os.path.join(logging_path, logging_file),
+        level=getattr(logging, logging_level.upper())
+    )
 
     QueueHandler(conf).activate_thread_pool(nthreads=args.nthreads)
 
