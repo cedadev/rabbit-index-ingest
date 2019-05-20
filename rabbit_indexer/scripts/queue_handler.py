@@ -9,7 +9,6 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 import pika
-import os
 import configparser
 import re
 import uuid
@@ -18,6 +17,7 @@ from rabbit_indexer.utils.path_tools import PathTools
 from rabbit_indexer.index_updaters.fbs_updates import FBSUpdateHandler
 from rabbit_indexer.index_updaters.directory_updates import DirectoryUpdateHandler
 import argparse
+from pika.exceptions import StreamLostError
 
 
 class QueueHandler:
@@ -85,33 +85,40 @@ class QueueHandler:
         # filesize = split_line[5]
         # message = ":".join(split_line[6:])
 
-        if self.deposit.match(body):
-            print(filepath)
-            self.fbs_handler.process_event(filepath, action)
+        try:
 
-            if self.readme00.match(body):
+            if self.deposit.match(body):
+                print(filepath)
+                self.fbs_handler.process_event(filepath, action)
+
+                if self.readme00.match(body):
+                    self.directory_handler.process_event(filepath, action)
+                    print(filepath)
+
+            elif self.deletion.match(body):
+                self.fbs_handler.process_event(filepath, action)
+                print(filepath)
+
+            elif self.mkdir.match(body):
                 self.directory_handler.process_event(filepath, action)
                 print(filepath)
 
-        elif self.deletion.match(body):
-            self.fbs_handler.process_event(filepath, action)
-            print(filepath)
+            elif self.rmdir.match(body):
+                self.directory_handler.process_event(filepath, action)
+                print(filepath)
 
-        elif self.mkdir.match(body):
-            self.directory_handler.process_event(filepath, action)
-            print(filepath)
+            elif self.symlink.match(body):
+                self.directory_handler.process_event(filepath, action)
+                print(filepath)
 
-        elif self.rmdir.match(body):
-            self.directory_handler.process_event(filepath, action)
-            print(filepath)
+        except Exception as e:
+            print (e)
 
-        elif self.symlink.match(body):
-            self.directory_handler.process_event(filepath, action)
-            print(filepath)
-
-
-    def run(self):
-
+    def _connect(self):
+        """
+        Start Pika connection to server
+        :return: pika connection channel
+        """
         # Start the rabbitMQ connection
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(
@@ -131,9 +138,21 @@ class QueueHandler:
         channel.queue_declare(queue=self.queue_name, auto_delete=True)
         channel.queue_bind(exchange=self.rabbit_route, queue=self.queue_name)
 
-        channel.basic_consume(queue=self.queue_name, on_message_callback=self.callback,  auto_ack=False)
+        channel.basic_consume(queue=self.queue_name, on_message_callback=self.callback, auto_ack=False)
 
-        channel.start_consuming()
+        return channel
+
+    def run(self):
+
+        channel = self._connect()
+
+        try:
+            channel.start_consuming()
+
+        except StreamLostError:
+            # If connection lost, reconnect.
+            channel = self._connect()
+            channel.start_consuming()
 
 
 def main():
