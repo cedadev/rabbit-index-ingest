@@ -17,7 +17,8 @@ from rabbit_indexer.utils.path_tools import PathTools
 from rabbit_indexer.index_updaters.fbs_updates import FBSUpdateHandler
 from rabbit_indexer.index_updaters.directory_updates import DirectoryUpdateHandler
 import argparse
-from pika.exceptions import StreamLostError
+import logging
+import os
 
 
 class QueueHandler:
@@ -32,18 +33,18 @@ class QueueHandler:
     def __init__(self, conf):
 
         # Get the username and password for rabbit
-        rabbit_user = conf.get("server", "user")
-        rabbit_password = conf.get("server", "password")
+        rabbit_user = conf.get('server', 'user')
+        rabbit_password = conf.get('server', 'password')
 
         # Get the server variables
-        self.rabbit_server = conf.get("server", "name")
-        self.rabbit_vhost = conf.get("server", "vhost")
+        self.rabbit_server = conf.get('server', 'name')
+        self.rabbit_vhost = conf.get('server', 'vhost')
 
         # Create the credentials object
         self.credentials = pika.PlainCredentials(rabbit_user, rabbit_password)
 
         # Set other shared attributes
-        self.rabbit_route = conf.get("server", "log_exchange")
+        self.rabbit_route = conf.get('server', 'log_exchange')
         self.thread_map = {}
         self.queue_name = f'elasticsearch_update_queue_{uuid.uuid4()}'
         self.path_tools = PathTools(moles_mapping_url='http://catalogue-test.ceda.ac.uk/api/v0/obs/all')
@@ -51,6 +52,17 @@ class QueueHandler:
         # Init event handlers
         self.directory_handler = DirectoryUpdateHandler(path_tools=self.path_tools)
         self.fbs_handler = FBSUpdateHandler(path_tools=self.path_tools)
+
+        # Setup logging
+        logging_path = conf.get('logging', 'filepath')
+        logging_file = conf.get('logging', 'filename')
+        logging_level = conf.get('logging', 'log-level')
+
+        logging.basicConfig(
+            filename=os.path.join(logging_path, logging_file),
+            level=getattr(logging, logging_level.upper())
+        )
+
 
     def activate_thread_pool(self, nthreads=6):
 
@@ -112,7 +124,7 @@ class QueueHandler:
                 print(filepath)
 
         except Exception as e:
-            print (e)
+            logging.error(f'Error occurred while scanning: {filepath}', exc_info=e)
 
     def _connect(self):
         """
@@ -125,7 +137,7 @@ class QueueHandler:
                 self.rabbit_server,
                 credentials=self.credentials,
                 virtual_host=self.rabbit_vhost,
-                heartbeat=50
+                heartbeat=300
             )
         )
 
@@ -143,25 +155,35 @@ class QueueHandler:
         return channel
 
     def run(self):
-
-        channel = self._connect()
-
-        try:
-            channel.start_consuming()
-
-        except StreamLostError:
-            # If connection lost, reconnect.
+        while True:
             channel = self._connect()
-            channel.start_consuming()
+
+            try:
+                channel.start_consuming()
+
+            except KeyboardInterrupt:
+                channel.stop_consuming()
+                break
+
+            except pika.exceptions.StreamLostError as e:
+                # Log problem
+                logging.error('Connection lost, reconnecting', exc_info=e)
+                continue
+
+            except Exception as e:
+                logging.critical(e)
+
+                channel.stop_consuming()
+                break
 
 
 def main():
-
     # Add command line argument to get rabbit config file.
     parser = argparse.ArgumentParser(description='Begin the rabbit based deposit indexer')
 
     parser.add_argument('--config', dest='config', help='Path to config file for rabbit connection')
-    parser.add_argument('--threads', dest='nthreads', type=int, help='Number of threads in the threadpool', default=6, required=False)
+    parser.add_argument('--threads', dest='nthreads', type=int, help='Number of threads in the threadpool', default=6,
+                        required=False)
 
     args = parser.parse_args()
 
@@ -171,7 +193,6 @@ def main():
 
     QueueHandler(conf).activate_thread_pool(nthreads=args.nthreads)
 
+
 if __name__ == '__main__':
     main()
-
-
