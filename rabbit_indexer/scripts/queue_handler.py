@@ -20,6 +20,7 @@ import argparse
 import logging
 import os
 import functools
+import signal
 
 
 class QueueHandler:
@@ -50,13 +51,22 @@ class QueueHandler:
 
         # Set other shared attributes
         self.rabbit_route = conf.get('server', 'log_exchange')
-        self.thread_map = {}
+        self.thread_list = []
         self.queue_name = f'elasticsearch_update_queue_{uuid.uuid4()}'
         self.path_tools = PathTools(moles_mapping_url='http://catalogue-test.ceda.ac.uk/api/v0/obs/all')
+        self.processing_stop = False
 
         # Init event handlers
         self.directory_handler = DirectoryUpdateHandler(path_tools=self.path_tools)
         self.fbs_handler = FBSUpdateHandler(path_tools=self.path_tools)
+
+        # Setup logging
+        logging_level = conf.get('logging', 'log-level')
+        logging.basicConfig(
+            level=getattr(logging, logging_level.upper())
+        )
+
+        self.logger = logging.getLogger()
 
     def _connect(self):
         """
@@ -91,8 +101,7 @@ class QueueHandler:
 
         return channel
 
-    @staticmethod
-    def _acknowledge_message(channel, delivery_tag):
+    def _acknowledge_message(self, channel, delivery_tag):
         """
         Acknowledge message
 
@@ -100,8 +109,18 @@ class QueueHandler:
         :param delivery_tag: Message id
         """
 
+        self.logger.debug(f'Acknowledging message: {delivery_tag}')
         if channel.is_open:
             channel.basic_ack(delivery_tag)
+
+    def _close_connection(self, channel):
+        """
+        Used to exit the program
+        :param channel:
+        """
+        self.logger.info('Stopping consumer')
+        channel.stop_consuming()
+
 
     def _callback(self, ch, method, properties, body, connection):
         """
@@ -153,9 +172,25 @@ class QueueHandler:
             cb = functools.partial(self._acknowledge_message, ch, method.delivery_tag)
             connection.add_callback_threadsafe(cb)
 
+            # Check to see if the script has been asked to stop
+            if self.processing_stop:
+                close_connection_cb = functools.partial(self._close_connection, ch)
+                connection.add_callback_threadsafe(close_connection_cb)
+
         except Exception as e:
             # Catch all exceptions in the scanning code and log them
-            logging.error(f'Error occurred while scanning: {filepath}', exc_info=e)
+            self.logger.error(f'Error occurred while scanning: {filepath}', exc_info=e)
+
+    def exit_handler(self):
+        """
+        Tells the threads to quit and exit cleanly
+        """
+
+        self.logger.info('Terminate signal sent from OS')
+        self.processing_stop = True
+
+        for thread in self.thread_list:
+            thread.join()
 
     def activate_thread_pool(self, nthreads=6):
         """
@@ -163,23 +198,26 @@ class QueueHandler:
         :param nthreads: Number of threads in the pool
         """
 
+        # Setup signal processors to catch interrupts
+        signal.signal(signal.SIGINT, self.exit_handler())
+        signal.signal(signal.SIGHUP, self.exit_handler())
+        signal.signal(signal.SIGTERM, self.exit_handler())
+
         # Create thread pool
-        thread_list = []
+
         for i in range(nthreads):
             thread = threading.Thread(
                 target=self.run,
                 name=f'Thread-{i}',
                 daemon=True
             )
-            thread_list.append(thread)
+            self.thread_list.append(thread)
 
         # Start the threads
-        for thread in thread_list:
-            self.thread_map[thread.ident] = thread.name
+        for thread in self.thread_list:
             thread.start()
 
-        # Join the completed threads
-        for thread in thread_list:
+        for thread in self.thread_list:
             thread.join()
 
     def run(self):
@@ -190,6 +228,7 @@ class QueueHandler:
         A common exception which occurs is StreamLostError. The connection should get reset if that happens.
         :return:
         """
+
         while True:
             channel = self._connect()
 
@@ -202,18 +241,17 @@ class QueueHandler:
 
             except pika.exceptions.StreamLostError as e:
                 # Log problem
-                logging.error('Connection lost, reconnecting', exc_info=e)
+                self.logger.error('Connection lost, reconnecting', exc_info=e)
                 continue
 
             except Exception as e:
-                logging.critical(e)
+                self.logger.critical(e)
 
                 channel.stop_consuming()
                 break
 
 
 def main():
-
     # Command line arguments to get rabbit config file.
     parser = argparse.ArgumentParser(description='Begin the rabbit based deposit indexer')
 
@@ -227,17 +265,8 @@ def main():
     conf = configparser.RawConfigParser()
     conf.read(CONFIG_FILE)
 
-    # Setup logging
-    logging_path = conf.get('logging', 'filepath')
-    logging_file = conf.get('logging', 'filename')
-    logging_level = conf.get('logging', 'log-level')
-
-    logging.basicConfig(
-        filename=os.path.join(logging_path, logging_file),
-        level=getattr(logging, logging_level.upper())
-    )
-
-    QueueHandler(conf).activate_thread_pool(nthreads=args.nthreads)
+    queue_handler = QueueHandler(conf)
+    queue_handler.activate_thread_pool(nthreads=args.nthreads)
 
 
 if __name__ == '__main__':
