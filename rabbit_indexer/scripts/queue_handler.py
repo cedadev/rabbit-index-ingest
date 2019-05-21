@@ -120,6 +120,7 @@ class QueueHandler:
         """
         self.logger.info('Stopping consumer')
         channel.stop_consuming()
+        raise KeyboardInterrupt
 
 
     def _callback(self, ch, method, properties, body, connection):
