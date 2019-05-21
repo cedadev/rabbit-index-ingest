@@ -181,7 +181,7 @@ class QueueHandler:
             # Catch all exceptions in the scanning code and log them
             self.logger.error(f'Error occurred while scanning: {filepath}', exc_info=e)
 
-    def exit_handler(self):
+    def exit_handler(self, *args):
         """
         Tells the threads to quit and exit cleanly
         """
