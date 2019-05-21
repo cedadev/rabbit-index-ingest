@@ -199,9 +199,9 @@ class QueueHandler:
         """
 
         # Setup signal processors to catch interrupts
-        signal.signal(signal.SIGINT, self.exit_handler())
-        signal.signal(signal.SIGHUP, self.exit_handler())
-        signal.signal(signal.SIGTERM, self.exit_handler())
+        signal.signal(signal.SIGINT, self.exit_handler)
+        signal.signal(signal.SIGHUP, self.exit_handler)
+        signal.signal(signal.SIGTERM, self.exit_handler)
 
         # Create thread pool
 
