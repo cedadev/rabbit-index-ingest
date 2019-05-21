@@ -16,17 +16,12 @@ import os
 
 class DirectoryUpdateHandler:
 
-    def __init__(self, path_tools, refresh_interval=30):
+    def __init__(self, path_tools, conf, refresh_interval=30):
         """
 
         :param path_tools: An initialised PathTools object
         :param refresh_interval: Time in minutes before refreshing the mappings
         """
-
-        # Read in the config file
-        conf = RawConfigParser()
-        base = os.path.dirname(__file__)
-        conf.read(os.path.join(base, '../conf/index_updater.ini'))
 
         # Convert refresh interval to seconds
         self.refresh_interval = refresh_interval * 60

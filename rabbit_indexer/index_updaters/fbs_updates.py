@@ -22,7 +22,7 @@ class FBSUpdateHandler:
     rabbitMQ.
     """
 
-    def __init__(self, path_tools, refresh_interval=30):
+    def __init__(self, path_tools, conf, refresh_interval=30):
         """
         Initialise the FBS Update Handler
 
@@ -33,8 +33,6 @@ class FBSUpdateHandler:
         # Read in the config file
         base = os.path.dirname(__file__)
 
-        conf = RawConfigParser()
-        conf.read(os.path.join(base, '../conf/index_updater.ini'))
         self.calculate_md5 = conf.getboolean('files-index', 'calculate-md5')
         self.handler_factory = HandlerPicker(cfg_read(os.path.join(base, '../conf/index_updater.ini')))
         self.level = conf.get('files-index', 'scan-level')

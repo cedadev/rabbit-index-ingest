@@ -57,8 +57,8 @@ class QueueHandler:
         self.processing_stop = False
 
         # Init event handlers
-        self.directory_handler = DirectoryUpdateHandler(path_tools=self.path_tools)
-        self.fbs_handler = FBSUpdateHandler(path_tools=self.path_tools)
+        self.directory_handler = DirectoryUpdateHandler(path_tools=self.path_tools, conf=conf)
+        self.fbs_handler = FBSUpdateHandler(path_tools=self.path_tools, conf=conf)
 
         # Setup logging
         logging_level = conf.get('logging', 'log-level')
@@ -256,7 +256,11 @@ def main():
     # Command line arguments to get rabbit config file.
     parser = argparse.ArgumentParser(description='Begin the rabbit based deposit indexer')
 
-    parser.add_argument('--config', dest='config', help='Path to config file for rabbit connection')
+    # Get default path for config
+    base = os.path.dirname(__file__)
+    default_config = os.path.join(base, '../conf/index_updater.ini')
+
+    parser.add_argument('--config', dest='config', help='Path to config file for rabbit connection', default=default_config)
     parser.add_argument('--threads', dest='nthreads', type=int, help='Number of threads in the threadpool', default=6,
                         required=False)
 
