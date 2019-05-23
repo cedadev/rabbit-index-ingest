@@ -42,6 +42,9 @@ class QueueHandler:
         rabbit_user = conf.get('server', 'user')
         rabbit_password = conf.get('server', 'password')
 
+        # Get moles api url
+        moles_url = f'{conf.get("moles", "moles_url")}/api/v0/obs/all'
+
         # Get the server variables
         self.rabbit_server = conf.get('server', 'name')
         self.rabbit_vhost = conf.get('server', 'vhost')
@@ -53,7 +56,7 @@ class QueueHandler:
         self.rabbit_route = conf.get('server', 'log_exchange')
         self.thread_list = []
         self.queue_name = f'elasticsearch_update_queue_{uuid.uuid4()}'
-        self.path_tools = PathTools(moles_mapping_url='http://catalogue-test.ceda.ac.uk/api/v0/obs/all')
+        self.path_tools = PathTools(moles_mapping_url=moles_url)
         self.processing_stop = False
 
         # Init event handlers

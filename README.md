@@ -12,6 +12,13 @@ The diagram below is a rough sketch of how the events from the deposit server ar
 
 # Installing
 
+In order to make it easy to set up the correct environment, this codebase should be installed as a package.
+This can be done using:
+
+1. Clone the environment `git clone https://github.com/cedadev/rabbit-index-ingest`
+
+2. Install the package `pip install -e <path_to_setup.py>`
+
 
 # Setup
 
