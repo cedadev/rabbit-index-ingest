@@ -31,3 +31,14 @@ You will need to set parameters in the `server` and `elasticsearch` sections.
 
 1. Activate the environment (On ingest machines this is `rabbit_fbi`)
 2. `rabbit_event_indexer` or `python rabbit_indexer/scripts/queue_handler.py`
+
+
+# Consistency Checker
+
+Config options
+
+| Option             | Description |
+| ------------------ | - |
+| queue-location     | Directory path to queue databases default:  |
+| spot-file          |  |
+| spot-progress-file |  |

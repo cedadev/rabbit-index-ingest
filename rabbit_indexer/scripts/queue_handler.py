@@ -13,9 +13,9 @@ import configparser
 import re
 import uuid
 import threading
-from rabbit_indexer.utils.path_tools import PathTools
-from rabbit_indexer.index_updaters.fbs_updates import FBSUpdateHandler
-from rabbit_indexer.index_updaters.directory_updates import DirectoryUpdateHandler
+from rabbit_indexer.utils import PathTools
+from rabbit_indexer.index_updaters import FBSUpdateHandler
+from rabbit_indexer.index_updaters import DirectoryUpdateHandler
 import argparse
 import logging
 import os
@@ -90,6 +90,7 @@ class QueueHandler:
 
         # Create a new channel
         channel = connection.channel()
+        channel.basic_qos(prefetch_count=1)
 
         # Connect the channel to the exchange
         channel.exchange_declare(exchange=self.rabbit_route, exchange_type='fanout')
