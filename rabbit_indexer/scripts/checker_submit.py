@@ -22,7 +22,14 @@ class DirectorySubmitter:
 
         self.conf = RawConfigParser()
         self.conf.read(args.conf)
-        self.queue = persistqueue.SQLiteAckQueue(os.path.join(self.conf.get('local-queue','queue-location'), 'priority'), multithreading=True)
+
+
+        base = os.path.dirname(__file__)
+        default_db_path = os.path.join(base, '../data')
+        local_queue = self.conf['local-queue']
+
+        db_location = local_queue.get('queue-location', default_db_path)
+        self.queue = persistqueue.SQLiteAckQueue(os.path.join(db_location, 'priority'), multithreading=True)
 
     def get_directories(self, args):
 
