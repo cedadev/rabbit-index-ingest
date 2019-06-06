@@ -166,6 +166,7 @@ class ElasticsearchConsistencyChecker:
             self.process_queue('bot_queue')
 
         if bot_qsize == 0:
+            logging.debug('Queues empty, retrieving next spot.')
             spot = self.get_next_spot()
             self.add_dirs_to_queue(spot)
 
