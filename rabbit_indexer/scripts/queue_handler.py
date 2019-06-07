@@ -11,8 +11,6 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 import pika
 import configparser
 import re
-import uuid
-import threading
 from rabbit_indexer.utils import PathTools
 from rabbit_indexer.index_updaters import FBSUpdateHandler
 from rabbit_indexer.index_updaters import DirectoryUpdateHandler
@@ -20,7 +18,6 @@ import argparse
 import logging
 import os
 import functools
-import signal
 
 
 class QueueHandler:

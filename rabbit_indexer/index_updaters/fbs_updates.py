@@ -57,6 +57,14 @@ class FBSUpdateHandler:
         # Initialise Path Tools
         self.pt = path_tools
 
+        # Setup logging
+        logging_level = conf.get('logging', 'log-level')
+        logging.basicConfig(
+            level=getattr(logging, logging_level.upper())
+        )
+
+        self.logger = logging.getLogger()
+
 
     def process_event(self, path, action):
         """
@@ -64,7 +72,7 @@ class FBSUpdateHandler:
         :param path: The file path to process
         :param action: The action to perform on the filepath
         """
-        logging.debug(f'{path}:{action}')
+        self.logger.debug(f'{path}:{action}')
 
         # Check to see if enough time has elapsed to update the mapping
         self._update_mappings()
