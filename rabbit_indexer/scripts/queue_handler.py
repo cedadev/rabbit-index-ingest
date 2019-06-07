@@ -65,7 +65,6 @@ class QueueHandler:
             level=getattr(logging, logging_level.upper())
         )
 
-        self.logger = logging.getLogger()
 
     def _connect(self):
         """
@@ -109,7 +108,7 @@ class QueueHandler:
         :param delivery_tag: Message id
         """
 
-        self.logger.debug(f'Acknowledging message: {delivery_tag}')
+        logging.debug(f'Acknowledging message: {delivery_tag}')
         if channel.is_open:
             channel.basic_ack(delivery_tag)
 
@@ -165,7 +164,7 @@ class QueueHandler:
 
         except Exception as e:
             # Catch all exceptions in the scanning code and log them
-            self.logger.error(f'Error occurred while scanning: {filepath}', exc_info=e)
+            logging.error(f'Error occurred while scanning: {filepath}', exc_info=e)
 
     def run(self):
         """
@@ -188,11 +187,11 @@ class QueueHandler:
 
             except pika.exceptions.StreamLostError as e:
                 # Log problem
-                self.logger.error('Connection lost, reconnecting', exc_info=e)
+                logging.error('Connection lost, reconnecting', exc_info=e)
                 continue
 
             except Exception as e:
-                self.logger.critical(e)
+                logging.critical(e)
 
                 channel.stop_consuming()
                 break
