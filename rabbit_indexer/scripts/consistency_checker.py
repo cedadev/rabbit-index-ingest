@@ -13,26 +13,35 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 import persistqueue
 from configparser import RawConfigParser
 import os
-import time
 from rabbit_indexer.utils import get_line_in_file
 import requests
 import logging
+from elasticsearch import Elasticsearch
+from elasticsearch.helpers import scan
+import argparse
+from os.path import normpath
+from datetime import datetime
+from rabbit_indexer.utils.constants import DEPOSIT, REMOVE, MKDIR, RMDIR
+import pika
+
+
 
 
 class ElasticsearchConsistencyChecker:
 
-    def __init__(self):
+    def __init__(self, args):
         base = os.path.dirname(__file__)
         self.default_config = os.path.join(base, '../conf/index_updater.ini')
         self.default_db_path = os.path.join(base, '../data')
 
         self.conf = RawConfigParser()
         self.conf.read(self.default_config)
+        self.args = args
 
         # Load queue params to object
         self._load_queue_params()
 
-        # Setup queues
+        # Setup local queues
         self.manual_queue = persistqueue.SQLiteAckQueue(
             os.path.join(self.db_location, 'priority'),
             multithreading=True
@@ -42,7 +51,14 @@ class ElasticsearchConsistencyChecker:
             multithreading=True
         )
 
+        # Create Elasticsearch connection
+        self.es = Elasticsearch([self.conf.get('elasticsearch', 'es-host')])
+
+        # Rabbit connection
+        self.channel, self.rbq = self._rabbit_connect()
+
         self.spot_progress = self._get_spot_progress()
+
 
     def _load_queue_params(self):
 
@@ -52,14 +68,12 @@ class ElasticsearchConsistencyChecker:
         self.spot_file = os.path.join(self.db_location, 'spot_file.txt')
         self.progress_file = os.path.join(self.db_location, 'spot_progress.txt')
 
-
     def _get_spot_progress(self):
         """
         Set the line to read from the spot file on initialisation
 
         :return: int
         """
-
 
         if os.path.exists(self.progress_file):
             with open(self.progress_file) as reader:
@@ -94,6 +108,141 @@ class ElasticsearchConsistencyChecker:
 
         self.spot_progress = 0
 
+    def _rabbit_connect(self):
+        """
+        Start Pika connection to server. This is run in each thread.
+
+        :return: pika channel
+        """
+
+        # Get the username and password for rabbit
+        rabbit_user = self.conf.get('server', 'user')
+        rabbit_password = self.conf.get('server', 'password')
+
+        rabbit_queue = self.conf.get('server', 'queue')
+
+        # Start the rabbitMQ connection
+        connection = pika.BlockingConnection(
+            pika.ConnectionParameters(
+                self.conf.get('server', 'name'),
+                credentials = pika.PlainCredentials(rabbit_user, rabbit_password),
+                virtual_host=self.conf.get('server', 'vhost'),
+                heartbeat=300
+            )
+        )
+
+        # Create a new channel
+        channel = connection.channel()
+
+        # Declare queue
+        channel.queue_declare(queue=rabbit_queue, auto_delete=True)
+
+        return channel, rabbit_queue
+
+    def create_message(self, path, action):
+        """
+        Create message to add to rabbit queue. Message matches format of deposit logs.
+        date_time:path:action:size:message
+
+        :param path: Full logical path to file
+        :return: string which matches deposit log format
+        """
+        time = datetime.now().isoformat(sep='-')
+
+        return f'{time}:{path}:{action.upper()}::'
+
+    def publish_message(self, msg):
+        self.channel.basic_publish(
+            exchange='',
+            routing_key=self.rbq,
+            body=msg
+        )
+
+    def get_query(self, index, directory):
+
+        queries = {
+            'ceda-dirs': {
+                'query': {
+                    'bool': {
+                        'must': [
+                            {
+                                'prefix': {
+                                    'path.keyword': f'{directory}'
+                                }
+                            }
+                        ],
+                        'filter': {
+                            'term': {
+                                'depth': len(directory.split('/'))
+                            }
+                        }
+                    }
+                }
+            },
+            'ceda-fbi': {
+                'query': {
+                    'term': {
+                        'info.directory': f'{directory}'
+                    }
+                }
+            }
+        }
+
+        return queries.get(index)
+
+    def compare_ceda_fbi(self, item, listing):
+
+        results = scan(self.es, query=self.get_query('ceda-fbi', item), index='ceda-fbi', scroll='1m')
+
+        result_set = {os.path.join(result['_source']['info']['dir'], result['_source']['info']['name']) for result in results}
+
+        file_set = {file for file in listing if os.path.isfile(file)}
+
+        # Get file in file_set not in ES (Need to add to ES)
+        add_es = file_set - result_set
+
+        # Get files in ES not in file_set (Need to delete from ES)
+        delete_es = result_set - file_set
+
+        logging.info(f'{len(add_es)} files to add to ES {len(delete_es)} files to delete from ES')
+        logging.debug(f'Files to add: {add_es}\n Files to remove {delete_es}')
+
+        # Generate messages for pika queue
+        for file in add_es:
+            msg = self.create_message(file, DEPOSIT)
+            self.publish_message(msg)
+
+        for file in delete_es:
+            msg = self.create_message(file, REMOVE)
+            self.publish_message(msg)
+
+    def compare_ceda_dirs(self, item, listing):
+
+        results = scan(self.es, query=self.get_query('ceda-dirs', item), index='ceda-dirs', scroll='1m')
+
+        result_set = {result['_source']['path'] for result in results}
+
+        dir_set = {normpath(_dir) for _dir in listing if os.path.isdir(_dir)}
+
+        # Get dirs in dir_set not in ES (Need to add to ES)
+        add_es = dir_set - result_set
+
+        # Get dirs in ES not in dir_set (Need to delete from ES)
+        delete_es = result_set - dir_set
+
+        logging.info(f'{len(add_es)} dirs to add to ES {len(delete_es)} dirs to delete from ES')
+        logging.debug(f'Dirs to add: {add_es}\n Dirs to remove {delete_es}')
+
+        # Generate messages for pika queue
+        for file in add_es:
+            msg = self.create_message(file, MKDIR)
+            self.publish_message(msg)
+
+        for file in delete_es:
+            msg = self.create_message(file, RMDIR)
+            self.publish_message(msg)
+
+
     def process_queue(self, queue):
         """
         Perform action on the queue and acknowledge when done
@@ -104,8 +253,13 @@ class ElasticsearchConsistencyChecker:
         q = getattr(self, queue)
 
         item = q.get()
-        print(item)
-        time.sleep(3)
+        logging.debug(item)
+
+        # Get list in
+        listing = [os.path.join(item, file) for file in os.listdir(item)]
+        self.compare_ceda_fbi(item, listing)
+        self.compare_ceda_dirs(item, listing)
+
         q.ack(item)
 
     def get_next_spot(self):
@@ -127,8 +281,13 @@ class ElasticsearchConsistencyChecker:
         line = get_line_in_file(self.spot_file, self.spot_progress)
 
         if line:
-            spot, path = line.strip().split()
-            logging.debug(f'Loading spot: {path}')
+            if line.strip():
+                spot, path = line.strip().split()
+                logging.debug(f'Loading spot: {path}')
+            else:
+                # If the line is just a \n character, get the next line.
+                path = self.get_next_spot()
+
 
         else:
             # Reached EOF. Download new file
@@ -147,6 +306,8 @@ class ElasticsearchConsistencyChecker:
         """
         Walks a directory tree, given a path and adds the directories to the bot queue
         """
+        if not os.path.exists(path):
+            logging.error(f'Path not found: {path}')
 
         for root, dirs, _ in os.walk(path):
             abs_root = os.path.abspath(root)
@@ -165,7 +326,7 @@ class ElasticsearchConsistencyChecker:
         elif bot_qsize:
             self.process_queue('bot_queue')
 
-        if bot_qsize == 0:
+        if bot_qsize == 0 and not self.args.dev:
             logging.debug('Queues empty, retrieving next spot.')
             spot = self.get_next_spot()
             self.add_dirs_to_queue(spot)
@@ -173,7 +334,14 @@ class ElasticsearchConsistencyChecker:
     @classmethod
     def main(cls):
 
-        checker = cls()
+        parser = argparse.ArgumentParser(description='Check directories with the elasticsearch indices to maintain'
+                                                     'consistency between the archive and the indices')
+
+        parser.add_argument('--dev', action='store_true', help='Disables the crawler to reduce number of events to process')
+
+        args = parser.parse_args()
+
+        checker = cls(args)
 
         while True:
             try:

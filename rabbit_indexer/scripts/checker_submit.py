@@ -37,22 +37,14 @@ class DirectorySubmitter:
 
         if self.check_path(args.dir):
 
+            directories.append(args.dir)
+
             if args.recursive:
                 for root, dirs, _ in os.walk(args.dir):
                     abs_root = os.path.abspath(root)
 
                     for dir in dirs:
                         directories.append(os.path.join(abs_root, dir))
-
-            else:
-                listing = os.listdir(args.dir)
-                abs_root = os.path.abspath(args.dir)
-
-                for _dir in listing:
-                    path = os.path.join(abs_root, _dir)
-
-                    if os.path.isdir(path):
-                        directories.append(path)
 
             return directories
 

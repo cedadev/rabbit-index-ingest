@@ -55,7 +55,7 @@ class QueueHandler:
         # Set other shared attributes
         self.rabbit_route = conf.get('server', 'log_exchange')
         self.thread_list = []
-        self.queue_name = f'elasticsearch_update_queue_{uuid.uuid4()}'
+        self.queue_name = conf.get('server', 'queue')
         self.path_tools = PathTools(moles_mapping_url=moles_url)
         self.processing_stop = False
 
