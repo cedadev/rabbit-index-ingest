@@ -102,7 +102,7 @@ class PathTools:
             with open(os.path.join(path, '00README')) as reader:
                 content = reader.read()
 
-            return content.encode(errors='ignore')
+            return content.encode(errors='ignore').decode()
 
     def update_mapping(self):
 

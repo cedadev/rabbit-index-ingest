@@ -59,6 +59,11 @@ class ElasticsearchConsistencyChecker:
 
         self.spot_progress = self._get_spot_progress()
 
+        # Setup logging
+        self.logger = logging.getLogger()
+        logging_level = self.conf.get('logging', 'log-level')
+        self.logger.setLevel(getattr(logging, logging_level.upper()))
+
 
     def _load_queue_params(self):
 
@@ -89,7 +94,7 @@ class ElasticsearchConsistencyChecker:
         Write the progress to file so that it persists if the main process dies
         """
         self.spot_progress += 1
-        logging.debug(f'Spot progress: {self.spot_progress}')
+        self.logger.debug(f'Spot progress: {self.spot_progress}')
 
         with open(self.progress_file, 'w') as writer:
             writer.write(str(self.spot_progress))
@@ -193,8 +198,7 @@ class ElasticsearchConsistencyChecker:
     def compare_ceda_fbi(self, item, listing):
 
         results = scan(self.es, query=self.get_query('ceda-fbi', item), index='ceda-fbi', scroll='1m')
-
-        result_set = {os.path.join(result['_source']['info']['dir'], result['_source']['info']['name']) for result in results}
+        result_set = {os.path.join(result['_source']['info']['directory'], result['_source']['info']['name']) for result in results}
 
         file_set = {file for file in listing if os.path.isfile(file)}
 
@@ -204,8 +208,8 @@ class ElasticsearchConsistencyChecker:
         # Get files in ES not in file_set (Need to delete from ES)
         delete_es = result_set - file_set
 
-        logging.info(f'{len(add_es)} files to add to ES {len(delete_es)} files to delete from ES')
-        logging.debug(f'Files to add: {add_es}\n Files to remove {delete_es}')
+        self.logger.info(f'{len(add_es)} files to add to ES {len(delete_es)} files to delete from ES')
+        self.logger.debug(f'Files to add: {add_es}\n Files to remove {delete_es}')
 
         # Generate messages for pika queue
         for file in add_es:
@@ -230,8 +234,8 @@ class ElasticsearchConsistencyChecker:
         # Get dirs in ES not in dir_set (Need to delete from ES)
         delete_es = result_set - dir_set
 
-        logging.info(f'{len(add_es)} dirs to add to ES {len(delete_es)} dirs to delete from ES')
-        logging.debug(f'Dirs to add: {add_es}\n Dirs to remove {delete_es}')
+        self.logger.info(f'{len(add_es)} dirs to add to ES {len(delete_es)} dirs to delete from ES')
+        self.logger.debug(f'Dirs to add: {add_es}\n Dirs to remove {delete_es}')
 
         # Generate messages for pika queue
         for file in add_es:
@@ -253,7 +257,7 @@ class ElasticsearchConsistencyChecker:
         q = getattr(self, queue)
 
         item = q.get()
-        logging.debug(item)
+        self.logger.info(item)
 
         # Get list in
         listing = [os.path.join(item, file) for file in os.listdir(item)]
@@ -271,7 +275,7 @@ class ElasticsearchConsistencyChecker:
 
         # Download the configuration if it does not exist
         if not os.path.exists(self.spot_file):
-            logging.debug('Spot file does not exist. Downloading...')
+            self.logger.debug('Spot file does not exist. Downloading...')
             self._download_spot_conf()
 
         # Increment spot_progress to retrieve next line
@@ -283,7 +287,7 @@ class ElasticsearchConsistencyChecker:
         if line:
             if line.strip():
                 spot, path = line.strip().split()
-                logging.debug(f'Loading spot: {path}')
+                self.logger.debug(f'Loading spot: {path}')
             else:
                 # If the line is just a \n character, get the next line.
                 path = self.get_next_spot()
@@ -291,14 +295,14 @@ class ElasticsearchConsistencyChecker:
 
         else:
             # Reached EOF. Download new file
-            logging.debug('Reached end of spot file. Downloading new spot file')
+            self.logger.debug('Reached end of spot file. Downloading new spot file')
             self._download_spot_conf()
             self._update_spot_progress()
 
             # Get first line
             line = get_line_in_file(self.spot_file, self.spot_progress)
             spot, path = line.strip().split()
-            logging.debug(f'Loading spot: {path}')
+            self.logger.debug(f'Loading spot: {path}')
 
         return path
 
@@ -307,7 +311,7 @@ class ElasticsearchConsistencyChecker:
         Walks a directory tree, given a path and adds the directories to the bot queue
         """
         if not os.path.exists(path):
-            logging.error(f'Path not found: {path}')
+            self.logger.error(f'Path not found: {path}')
 
         for root, dirs, _ in os.walk(path):
             abs_root = os.path.abspath(root)
@@ -327,7 +331,7 @@ class ElasticsearchConsistencyChecker:
             self.process_queue('bot_queue')
 
         if bot_qsize == 0 and not self.args.dev:
-            logging.debug('Queues empty, retrieving next spot.')
+            self.logger.debug('Queues empty, retrieving next spot.')
             spot = self.get_next_spot()
             self.add_dirs_to_queue(spot)
 
@@ -343,6 +347,7 @@ class ElasticsearchConsistencyChecker:
 
         checker = cls(args)
 
+        print("Ready")
         while True:
             try:
                 checker.start_consuming()
