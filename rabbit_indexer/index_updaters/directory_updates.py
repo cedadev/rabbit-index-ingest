@@ -56,7 +56,7 @@ class DirectoryUpdateHandler:
         :param path: The directory or readme path to process
 
         """
-        self.logger.debug(f'{path}:{action}')
+        self.logger.info(f'{path}:{action}')
 
         # Check to see if enough time has elapsed to update the mapping
         self._update_mappings()

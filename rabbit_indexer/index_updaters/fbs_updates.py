@@ -69,7 +69,7 @@ class FBSUpdateHandler:
         :param path: The file path to process
         :param action: The action to perform on the filepath
         """
-        self.logger.debug(f'{path}:{action}')
+        self.logger.info(f'{path}:{action}')
 
         # Check to see if enough time has elapsed to update the mapping
         self._update_mappings()
