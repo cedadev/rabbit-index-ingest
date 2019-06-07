@@ -8,12 +8,12 @@ __copyright__ = 'Copyright 2018 United Kingdom Research and Innovation'
 __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
-from configparser import RawConfigParser
-from ceda_elasticsearch_tools.index_tools.index_updaters import CedaFbi
+from ceda_elasticsearch_tools.index_tools import CedaFbi
 from datetime import datetime
 from fbs.proc.file_handlers.handler_picker import HandlerPicker
 from fbs.proc.common_util.util import cfg_read
 import os
+import logging
 
 
 class FBSUpdateHandler:
@@ -64,6 +64,7 @@ class FBSUpdateHandler:
         :param path: The file path to process
         :param action: The action to perform on the filepath
         """
+        logging.debug(f'{path}:{action}')
 
         # Check to see if enough time has elapsed to update the mapping
         self._update_mappings()

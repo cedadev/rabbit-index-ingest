@@ -8,10 +8,10 @@ __copyright__ = 'Copyright 2018 United Kingdom Research and Innovation'
 __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
-from ceda_elasticsearch_tools.index_tools.index_updaters import CedaDirs
-from configparser import RawConfigParser
+from ceda_elasticsearch_tools.index_tools import CedaDirs
 from datetime import datetime
 import os
+import logging
 
 
 class DirectoryUpdateHandler:
@@ -51,6 +51,7 @@ class DirectoryUpdateHandler:
         :param path: The directory or readme path to process
 
         """
+        logging.debug(f'{path}:{action}')
 
         # Check to see if enough time has elapsed to update the mapping
         self._update_mappings()
@@ -81,6 +82,7 @@ class DirectoryUpdateHandler:
         # Refresh if ∆t is greater than the refresh interval and another thread has not already
         # picked up the task.
         if timedelta > self.refresh_interval and not self.refreshing:
+            logging.info('Refreshing mappings')
 
             # Set refreshing boolean to be True to avoid another thread trying to refresh the
             # mappings at the same time
