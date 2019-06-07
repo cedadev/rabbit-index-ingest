@@ -44,11 +44,9 @@ class DirectoryUpdateHandler:
         self.pt = path_tools
 
         # Setup logging
+        self.logger = logging.getLogger()
         logging_level = conf.get('logging', 'log-level')
-        logging.basicConfig(
-            level=getattr(logging, logging_level.upper())
-        )
-
+        self.logger.setLevel(getattr(logging, logging_level.upper()))
 
     def process_event(self, path, action):
         """
@@ -58,7 +56,7 @@ class DirectoryUpdateHandler:
         :param path: The directory or readme path to process
 
         """
-        logging.debug(f'{path}:{action}')
+        self.logger.debug(f'{path}:{action}')
 
         # Check to see if enough time has elapsed to update the mapping
         self._update_mappings()
@@ -89,7 +87,7 @@ class DirectoryUpdateHandler:
         # Refresh if ∆t is greater than the refresh interval and another thread has not already
         # picked up the task.
         if timedelta > self.refresh_interval and not self.refreshing:
-            logging.info('Refreshing mappings')
+            self.logger.info('Refreshing mappings')
 
             # Set refreshing boolean to be True to avoid another thread trying to refresh the
             # mappings at the same time

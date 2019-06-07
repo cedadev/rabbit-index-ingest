@@ -60,10 +60,9 @@ class QueueHandler:
         self.fbs_handler = FBSUpdateHandler(path_tools=self.path_tools, conf=conf)
 
         # Setup logging
+        self.logger = logging.getLogger()
         logging_level = conf.get('logging', 'log-level')
-        logging.basicConfig(
-            level=getattr(logging, logging_level.upper())
-        )
+        self.logger.setLevel(getattr(logging, logging_level.upper()))
 
 
     def _connect(self):
@@ -108,7 +107,7 @@ class QueueHandler:
         :param delivery_tag: Message id
         """
 
-        logging.debug(f'Acknowledging message: {delivery_tag}')
+        self.logger.debug(f'Acknowledging message: {delivery_tag}')
         if channel.is_open:
             channel.basic_ack(delivery_tag)
 
@@ -164,7 +163,7 @@ class QueueHandler:
 
         except Exception as e:
             # Catch all exceptions in the scanning code and log them
-            logging.error(f'Error occurred while scanning: {filepath}', exc_info=e)
+            self.logger.error(f'Error occurred while scanning: {filepath}', exc_info=e)
 
     def run(self):
         """
@@ -187,11 +186,11 @@ class QueueHandler:
 
             except pika.exceptions.StreamLostError as e:
                 # Log problem
-                logging.error('Connection lost, reconnecting', exc_info=e)
+                self.logger.error('Connection lost, reconnecting', exc_info=e)
                 continue
 
             except Exception as e:
-                logging.critical(e)
+                self.logger.critical(e)
 
                 channel.stop_consuming()
                 break
