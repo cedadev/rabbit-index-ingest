@@ -64,6 +64,7 @@ class FBSUpdateHandler:
         )
 
         self.logger = logging.getLogger()
+        print(f'Got logger {self.logger}')
 
 
     def process_event(self, path, action):
