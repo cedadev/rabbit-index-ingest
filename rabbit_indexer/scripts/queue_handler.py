@@ -54,7 +54,6 @@ class QueueHandler:
 
         # Set other shared attributes
         self.rabbit_route = conf.get('server', 'log_exchange')
-        self.thread_list = []
         self.queue_name = conf.get('server', 'queue')
         self.path_tools = PathTools(moles_mapping_url=moles_url)
         self.processing_stop = False
@@ -117,16 +116,6 @@ class QueueHandler:
         if channel.is_open:
             channel.basic_ack(delivery_tag)
 
-    def _close_connection(self, channel):
-        """
-        Used to exit the program
-        :param channel:
-        """
-        self.logger.info('Stopping consumer')
-        channel.stop_consuming()
-        raise KeyboardInterrupt
-
-
     def _callback(self, ch, method, properties, body, connection):
         """
         Callback to run during basic consume routine.
@@ -177,53 +166,9 @@ class QueueHandler:
             cb = functools.partial(self._acknowledge_message, ch, method.delivery_tag)
             connection.add_callback_threadsafe(cb)
 
-            # Check to see if the script has been asked to stop
-            if self.processing_stop:
-                close_connection_cb = functools.partial(self._close_connection, ch)
-                connection.add_callback_threadsafe(close_connection_cb)
-
         except Exception as e:
             # Catch all exceptions in the scanning code and log them
             self.logger.error(f'Error occurred while scanning: {filepath}', exc_info=e)
-
-    def exit_handler(self, *args):
-        """
-        Tells the threads to quit and exit cleanly
-        """
-
-        self.logger.info('Terminate signal sent from OS')
-        self.processing_stop = True
-
-        for thread in self.thread_list:
-            thread.join()
-
-    def activate_thread_pool(self, nthreads=6):
-        """
-        Create the thread pool and set them running
-        :param nthreads: Number of threads in the pool
-        """
-
-        # Setup signal processors to catch interrupts
-        signal.signal(signal.SIGINT, self.exit_handler)
-        signal.signal(signal.SIGHUP, self.exit_handler)
-        signal.signal(signal.SIGTERM, self.exit_handler)
-
-        # Create thread pool
-
-        for i in range(nthreads):
-            thread = threading.Thread(
-                target=self.run,
-                name=f'Thread-{i}',
-                daemon=True
-            )
-            self.thread_list.append(thread)
-
-        # Start the threads
-        for thread in self.thread_list:
-            thread.start()
-
-        for thread in self.thread_list:
-            thread.join()
 
     def run(self):
         """
@@ -265,8 +210,6 @@ def main():
     default_config = os.path.join(base, '../conf/index_updater.ini')
 
     parser.add_argument('--config', dest='config', help='Path to config file for rabbit connection', default=default_config)
-    parser.add_argument('--threads', dest='nthreads', type=int, help='Number of threads in the threadpool', default=6,
-                        required=False)
 
     args = parser.parse_args()
 
@@ -275,7 +218,7 @@ def main():
     conf.read(CONFIG_FILE)
 
     queue_handler = QueueHandler(conf)
-    queue_handler.activate_thread_pool(nthreads=args.nthreads)
+    queue_handler.run()
 
 
 if __name__ == '__main__':
