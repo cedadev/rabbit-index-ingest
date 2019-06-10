@@ -51,7 +51,7 @@ class TestConsistencyChecker(unittest.TestCase):
             cls.spots.append(path)
 
     def setUp(self):
-        self.checker = ElasticsearchConsistencyChecker()
+        self.checker = ElasticsearchConsistencyChecker(test=True)
 
     def tearDown(self):
         "Clear up databases and spot file"
@@ -103,6 +103,16 @@ class TestConsistencyChecker(unittest.TestCase):
             item = self.checker.bot_queue.get()
             self.assertTrue(self.get_test_path(item) in self.spots)
 
+    def test_create_message(self):
+        filename = '/path/to/a/file.txt'
+        action = 'DEPOSIT'
+
+        message = self.checker.create_message(filename, action)
+
+        split_message = message.split(':')
+        self.assertEqual(split_message[3], filename)
+        self.assertEqual(split_message[4], action)
+
 
     @classmethod
     def tearDownClass(cls):
@@ -110,4 +120,5 @@ class TestConsistencyChecker(unittest.TestCase):
 
 
 if __name__ == '__main__':
+    print('In order for test_add_dirs to work, you need to run this from the test directory...')
     unittest.main()

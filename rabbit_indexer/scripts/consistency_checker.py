@@ -27,14 +27,13 @@ import pika
 
 class ElasticsearchConsistencyChecker:
 
-    def __init__(self, args):
+    def __init__(self, test=False):
         base = os.path.dirname(__file__)
         self.default_config = os.path.join(base, '../conf/index_updater.ini')
         self.default_db_path = os.path.join(base, '../data')
 
         self.conf = RawConfigParser()
         self.conf.read(self.default_config)
-        self.args = args
 
         # Load queue params to object
         self._load_queue_params()
@@ -49,11 +48,12 @@ class ElasticsearchConsistencyChecker:
             multithreading=True
         )
 
-        # Create Elasticsearch connection
-        self.es = Elasticsearch([self.conf.get('elasticsearch', 'es-host')])
+        if not test:
+            # Create Elasticsearch connection
+            self.es = Elasticsearch([self.conf.get('elasticsearch', 'es-host')])
 
-        # Rabbit connection
-        self.channel, self.rbq = self._rabbit_connect()
+            # Rabbit connection
+            self.channel, self.rbq = self._rabbit_connect()
 
         self.spot_progress = self._get_spot_progress()
 
@@ -264,7 +264,7 @@ class ElasticsearchConsistencyChecker:
         item = q.get()
         self.logger.info(item)
 
-        # Get list in
+        # Get list of files and directories
         listing = [os.path.join(item, file) for file in os.listdir(item)]
         self.compare_ceda_fbi(item, listing)
         self.compare_ceda_dirs(item, listing)
@@ -324,7 +324,7 @@ class ElasticsearchConsistencyChecker:
             for dir in dirs:
                 self.bot_queue.put(os.path.join(abs_root, dir))
 
-    def start_consuming(self):
+    def start_consuming(self, dev=False):
 
         manual_qsize = self.manual_queue._count()
         bot_qsize = self.bot_queue._count()
@@ -335,7 +335,7 @@ class ElasticsearchConsistencyChecker:
         elif bot_qsize:
             self.process_queue('bot_queue')
 
-        if bot_qsize == 0 and not self.args.dev:
+        if bot_qsize == 0 and not dev:
             self.logger.debug('Queues empty, retrieving next spot.')
             spot = self.get_next_spot()
             self.add_dirs_to_queue(spot)
@@ -356,7 +356,7 @@ class ElasticsearchConsistencyChecker:
         print("Ready")
         while True:
             try:
-                checker.start_consuming()
+                checker.start_consuming(dev=args.dev)
 
             except KeyboardInterrupt:
                 break

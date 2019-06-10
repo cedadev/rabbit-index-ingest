@@ -1,6 +1,6 @@
 # encoding: utf-8
 """
-
+Constants for use with the rabbit_indexer
 """
 __author__ = 'Richard Smith'
 __date__ = '07 Jun 2019'
