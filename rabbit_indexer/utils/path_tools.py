@@ -12,6 +12,7 @@ import os
 import requests
 from json.decoder import JSONDecodeError
 import hashlib
+from requests.exceptions import Timeout
 
 class PathTools:
 
@@ -67,6 +68,7 @@ class PathTools:
             dir_meta['record_type'] = record['record_type']
 
         # Get README content for the directory, if there is one
+        # TODO: Write this in a better way which does not call os.listdir for every directory
         readme = self.get_readme(path)
 
         # Add the readme contents to the metadata
@@ -84,7 +86,10 @@ class PathTools:
 
         # Search MOLES API for path match
         url = f'http://catalogue.ceda.ac.uk/api/v0/obs/get_info{path}'
-        response = requests.get(url)
+        try:
+            response = requests.get(url, timeout=10)
+        except Timeout:
+            return
 
         # Update moles
         if response:
@@ -109,8 +114,8 @@ class PathTools:
         successful = True
         # Update the moles mapping
         try:
-            self.moles_mapping = requests.get(self.moles_mapping_url).json()
-        except ValueError:
+            self.moles_mapping = requests.get(self.moles_mapping_url, timeout=30).json()
+        except (ValueError, Timeout):
             successful = False
 
         # Update the spot mapping

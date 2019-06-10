@@ -9,14 +9,13 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 from ceda_elasticsearch_tools.index_tools import CedaFbi
-from datetime import datetime
 from fbs.proc.file_handlers.handler_picker import HandlerPicker
 from fbs.proc.common_util.util import cfg_read
 import os
-import logging
+from rabbit_indexer.index_updaters.base import UpdateHandler
 
 
-class FBSUpdateHandler:
+class FBSUpdateHandler(UpdateHandler):
     """
     Class to handle the live updates of the FBI index using events from
     rabbitMQ.
@@ -29,6 +28,8 @@ class FBSUpdateHandler:
         :param path_tools: PathTools Object
         :param refresh_interval: Time in minutes to refresh mappings
         """
+
+        super().__init__(path_tools, conf, refresh_interval)
 
         # Read in the config file
         base = os.path.dirname(__file__)
@@ -49,20 +50,6 @@ class FBSUpdateHandler:
             **es_auth
         )
 
-        # Initialise update counter
-        self.update_time = datetime.now()
-        self.refreshing = False
-        self.refresh_interval = refresh_interval * 60
-
-        # Initialise Path Tools
-        self.pt = path_tools
-
-        # Setup logging
-        self.logger = logging.getLogger()
-        logging_level = conf.get('logging', 'log-level')
-        self.logger.setLevel(getattr(logging, logging_level.upper()))
-
-
     def process_event(self, path, action):
         """
 
@@ -79,31 +66,6 @@ class FBSUpdateHandler:
 
         elif action == 'DELETE':
             self._process_deletions(path)
-
-    def _update_mappings(self):
-        """
-        Need to make sure that the code is using the most up to date mapping, either in
-        MOLES or the spot mapping. This checks
-        :return:
-        """
-
-        timedelta = (datetime.now() - self.update_time).seconds
-
-        # Refresh if ∆t is greater than the refresh interval and another thread has not already
-        # picked up the task.
-        if timedelta > self.refresh_interval and not self.refreshing:
-
-            # Set refreshing boolean to be True to avoid another thread trying to refresh the
-            # mappings at the same time
-            self.refreshing = True
-
-            successful = self.pt.update_mapping()
-
-            # Reset timer if mapping update successful and reset refreshing boolean
-            if successful:
-                self.update_time = datetime.now()
-
-            self.refreshing = False
 
     def _process_deposits(self, path):
         """
