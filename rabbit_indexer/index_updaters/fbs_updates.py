@@ -39,15 +39,17 @@ class FBSUpdateHandler(UpdateHandler):
         self.level = conf.get('files-index', 'scan-level')
 
         # Initialise the Elasticsearch connection
-        es_auth = {'http_auth': (
-            conf.get('elasticsearch', 'es-user'),
-            conf.get('elasticsearch', 'es-password')
-        )}
 
         self.index_updater = CedaFbi(
             index=conf.get('files-index', 'es-index'),
             host_url=conf.get('elasticsearch', 'es-host'),
-            **es_auth
+            **{'http_auth': (
+                conf.get('elasticsearch', 'es-user'),
+                conf.get('elasticsearch', 'es-password')
+            ),
+                'retry_on_timeout': True,
+                'timeout': 30
+            }
         )
 
     def process_event(self, path, action):

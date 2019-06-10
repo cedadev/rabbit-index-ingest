@@ -12,6 +12,7 @@ from ceda_elasticsearch_tools.index_tools import CedaDirs
 import os
 from rabbit_indexer.index_updaters.base import UpdateHandler
 
+
 class DirectoryUpdateHandler(UpdateHandler):
 
     def __init__(self, path_tools, conf, refresh_interval=30):
@@ -22,7 +23,6 @@ class DirectoryUpdateHandler(UpdateHandler):
         """
         super().__init__(path_tools, conf, refresh_interval)
 
-
         # Initialise the Elasticsearch connection
         self.index_updater = CedaDirs(
             index=conf.get('directory-index', 'es-index'),
@@ -30,9 +30,11 @@ class DirectoryUpdateHandler(UpdateHandler):
             **{'http_auth': (
                 conf.get('elasticsearch', 'es-user'),
                 conf.get('elasticsearch', 'es-password')
-            )}
+            ),
+                'retry_on_timeout': True,
+                'timeout': 30
+            }
         )
-
 
     def process_event(self, path, action):
         """
@@ -55,12 +57,10 @@ class DirectoryUpdateHandler(UpdateHandler):
             self._process_deletions(path)
 
         elif action == 'SYMLINK':
-
             self._process_symlinks(path)
+
         elif action == '00README':
-
             self._process_readmes(path)
-
 
     def _process_creations(self, path):
         """
