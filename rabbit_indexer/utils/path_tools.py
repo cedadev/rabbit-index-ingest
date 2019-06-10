@@ -67,14 +67,6 @@ class PathTools:
             dir_meta['url'] = record['url']
             dir_meta['record_type'] = record['record_type']
 
-        # Get README content for the directory, if there is one
-        # TODO: Write this in a better way which does not call os.listdir for every directory
-        readme = self.get_readme(path)
-
-        # Add the readme contents to the metadata
-        if readme:
-            dir_meta['readme'] = readme
-
         return dir_meta, dir_meta['link']
 
     def get_moles_record_metadata(self, path):

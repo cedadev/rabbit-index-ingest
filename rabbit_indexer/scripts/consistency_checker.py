@@ -21,10 +21,8 @@ from elasticsearch.helpers import scan
 import argparse
 from os.path import normpath
 from datetime import datetime
-from rabbit_indexer.utils.constants import DEPOSIT, REMOVE, MKDIR, RMDIR
+from rabbit_indexer.utils.constants import DEPOSIT, REMOVE, MKDIR, RMDIR, README
 import pika
-
-
 
 
 class ElasticsearchConsistencyChecker:
@@ -63,7 +61,6 @@ class ElasticsearchConsistencyChecker:
         self.logger = logging.getLogger()
         logging_level = self.conf.get('logging', 'log-level')
         self.logger.setLevel(getattr(logging, logging_level.upper()))
-
 
     def _load_queue_params(self):
 
@@ -130,7 +127,7 @@ class ElasticsearchConsistencyChecker:
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(
                 self.conf.get('server', 'name'),
-                credentials = pika.PlainCredentials(rabbit_user, rabbit_password),
+                credentials=pika.PlainCredentials(rabbit_user, rabbit_password),
                 virtual_host=self.conf.get('server', 'vhost'),
                 heartbeat=300
             )
@@ -144,12 +141,14 @@ class ElasticsearchConsistencyChecker:
 
         return channel, rabbit_queue
 
-    def create_message(self, path, action):
+    @staticmethod
+    def create_message(path, action):
         """
         Create message to add to rabbit queue. Message matches format of deposit logs.
         date_time:path:action:size:message
 
         :param path: Full logical path to file
+        :param action: Action constant
         :return: string which matches deposit log format
         """
         time = datetime.now().isoformat(sep='-')
@@ -198,7 +197,8 @@ class ElasticsearchConsistencyChecker:
     def compare_ceda_fbi(self, item, listing):
 
         results = scan(self.es, query=self.get_query('ceda-fbi', item), index='ceda-fbi', scroll='1m')
-        result_set = {os.path.join(result['_source']['info']['directory'], result['_source']['info']['name']) for result in results}
+        result_set = {os.path.join(result['_source']['info']['directory'], result['_source']['info']['name']) for result
+                      in results}
 
         file_set = {file for file in listing if os.path.isfile(file)}
 
@@ -246,6 +246,11 @@ class ElasticsearchConsistencyChecker:
             msg = self.create_message(file, RMDIR)
             self.publish_message(msg)
 
+        # Check if there are any 00README files in this dir
+        for file in listing:
+            if os.path.basename(file) == '00README':
+                msg = self.create_message(file, README)
+                self.publish_message(msg)
 
     def process_queue(self, queue):
         """
@@ -341,7 +346,8 @@ class ElasticsearchConsistencyChecker:
         parser = argparse.ArgumentParser(description='Check directories with the elasticsearch indices to maintain'
                                                      'consistency between the archive and the indices')
 
-        parser.add_argument('--dev', action='store_true', help='Disables the crawler to reduce number of events to process')
+        parser.add_argument('--dev', action='store_true',
+                            help='Disables the crawler to reduce number of events to process')
 
         args = parser.parse_args()
 
