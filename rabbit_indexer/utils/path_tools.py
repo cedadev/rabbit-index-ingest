@@ -76,6 +76,18 @@ class PathTools:
         :return: Dictionary containing MOLES title, url and record_type
         """
 
+        # Check for path match in stored dictionary
+        test_path = path
+        while test_path != '/' and test_path:
+
+            result = self.moles_mapping.get(test_path)
+            if result is not None:
+                return result
+
+            # Shrink the path down until a match is found
+            test_path = os.path.dirname(test_path)
+
+        # No match has been found
         # Search MOLES API for path match
         url = f'http://catalogue.ceda.ac.uk/api/v0/obs/get_info{path}'
         try:
