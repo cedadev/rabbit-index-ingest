@@ -19,6 +19,7 @@ import logging
 import os
 import functools
 
+logger = logging.getLogger()
 
 class QueueHandler:
     """
@@ -58,11 +59,6 @@ class QueueHandler:
         # Init event handlers
         self.directory_handler = DirectoryUpdateHandler(path_tools=self.path_tools, conf=conf)
         self.fbs_handler = FBSUpdateHandler(path_tools=self.path_tools, conf=conf)
-
-        # Setup logging
-        self.logger = logging.getLogger()
-        logging_level = conf.get('logging', 'log-level')
-        self.logger.setLevel(getattr(logging, logging_level.upper()))
 
 
     def _connect(self):
@@ -107,7 +103,7 @@ class QueueHandler:
         :param delivery_tag: Message id
         """
 
-        self.logger.debug(f'Acknowledging message: {delivery_tag}')
+        logger.debug(f'Acknowledging message: {delivery_tag}')
         if channel.is_open:
             channel.basic_ack(delivery_tag)
 
@@ -163,7 +159,7 @@ class QueueHandler:
 
         except Exception as e:
             # Catch all exceptions in the scanning code and log them
-            self.logger.error(f'Error occurred while scanning: {filepath}', exc_info=e)
+            logger.error(f'Error occurred while scanning: {filepath}', exc_info=e)
 
     def run(self):
         """
@@ -186,11 +182,11 @@ class QueueHandler:
 
             except pika.exceptions.StreamLostError as e:
                 # Log problem
-                self.logger.error('Connection lost, reconnecting', exc_info=e)
+                logger.error('Connection lost, reconnecting', exc_info=e)
                 continue
 
             except Exception as e:
-                self.logger.critical(e)
+                logger.critical(e)
 
                 channel.stop_consuming()
                 break
@@ -211,6 +207,18 @@ def main():
     CONFIG_FILE = args.config
     conf = configparser.RawConfigParser()
     conf.read(CONFIG_FILE)
+
+    # Setup logging
+    logging_level = conf.get('logging', 'log-level')
+    logger.setLevel(getattr(logging, logging_level.upper()))
+
+    # Add formatting
+    ch = logging.StreamHandler()
+    ch.setLevel(getattr(logging, logging_level.upper()))
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+
+    logger.addHandler(ch)
 
     queue_handler = QueueHandler(conf)
     queue_handler.run()

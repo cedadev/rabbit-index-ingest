@@ -48,7 +48,7 @@ class FBSUpdateHandler(UpdateHandler):
                 conf.get('elasticsearch', 'es-password')
             ),
                 'retry_on_timeout': True,
-                'timeout': 30
+                'timeout': 60
             }
         )
 
