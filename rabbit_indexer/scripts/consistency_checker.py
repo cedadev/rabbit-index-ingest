@@ -24,10 +24,17 @@ from datetime import datetime
 from rabbit_indexer.utils.constants import DEPOSIT, REMOVE, MKDIR, RMDIR, README
 import pika
 
+logger = logging.getLogger()
+
+
+# Set level of logging for elasticsearch higher to reduce output
+elastic_logger = logging.getLogger('elasticsearch')
+elastic_logger.setLevel(logging.WARNING)
+
 
 class ElasticsearchConsistencyChecker:
 
-    def __init__(self, test=False):
+    def __init__(self):
         base = os.path.dirname(__file__)
         self.default_config = os.path.join(base, '../conf/index_updater.ini')
         self.default_db_path = os.path.join(base, '../data')
@@ -48,19 +55,23 @@ class ElasticsearchConsistencyChecker:
             multithreading=True
         )
 
-        if not test:
-            # Create Elasticsearch connection
-            self.es = Elasticsearch([self.conf.get('elasticsearch', 'es-host')])
-
-            # Rabbit connection
-            self.channel, self.rbq = self._rabbit_connect()
+        # Create Elasticsearch connection
+        self.es = Elasticsearch([self.conf.get('elasticsearch', 'es-host')], timeout=60, retry_on_timeout=True)
+        self.rabbit_connect()
 
         self.spot_progress = self._get_spot_progress()
 
         # Setup logging
-        self.logger = logging.getLogger()
         logging_level = self.conf.get('logging', 'log-level')
-        self.logger.setLevel(getattr(logging, logging_level.upper()))
+        logger.setLevel(getattr(logging, logging_level.upper()))
+
+        # Add formatting
+        ch = logging.StreamHandler()
+        ch.setLevel(getattr(logging, logging_level.upper()))
+        formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+        ch.setFormatter(formatter)
+
+        logger.addHandler(ch)
 
     def _load_queue_params(self):
 
@@ -91,7 +102,7 @@ class ElasticsearchConsistencyChecker:
         Write the progress to file so that it persists if the main process dies
         """
         self.spot_progress += 1
-        self.logger.debug(f'Spot progress: {self.spot_progress}')
+        logger.debug(f'Spot progress: {self.spot_progress}')
 
         with open(self.progress_file, 'w') as writer:
             writer.write(str(self.spot_progress))
@@ -110,7 +121,7 @@ class ElasticsearchConsistencyChecker:
 
         self.spot_progress = 0
 
-    def _rabbit_connect(self):
+    def rabbit_connect(self):
         """
         Start Pika connection to server. This is run in each thread.
 
@@ -139,7 +150,8 @@ class ElasticsearchConsistencyChecker:
         # Declare queue
         channel.queue_declare(queue=rabbit_queue, auto_delete=True)
 
-        return channel, rabbit_queue
+        self.channel = channel
+        self.rbq = rabbit_queue
 
     @staticmethod
     def create_message(path, action):
@@ -208,8 +220,8 @@ class ElasticsearchConsistencyChecker:
         # Get files in ES not in file_set (Need to delete from ES)
         delete_es = result_set - file_set
 
-        self.logger.info(f'{len(add_es)} files to add to ES {len(delete_es)} files to delete from ES')
-        self.logger.debug(f'Files to add: {add_es}\n Files to remove {delete_es}')
+        logger.info(f'{len(add_es)} files to add to ES {len(delete_es)} files to delete from ES')
+        logger.debug(f'Files to add: {add_es}\n Files to remove {delete_es}')
 
         # Generate messages for pika queue
         for file in add_es:
@@ -234,8 +246,8 @@ class ElasticsearchConsistencyChecker:
         # Get dirs in ES not in dir_set (Need to delete from ES)
         delete_es = result_set - dir_set
 
-        self.logger.info(f'{len(add_es)} dirs to add to ES {len(delete_es)} dirs to delete from ES')
-        self.logger.debug(f'Dirs to add: {add_es}\n Dirs to remove {delete_es}')
+        logger.info(f'{len(add_es)} dirs to add to ES {len(delete_es)} dirs to delete from ES')
+        logger.debug(f'Dirs to add: {add_es}\n Dirs to remove {delete_es}')
 
         # Generate messages for pika queue
         for file in add_es:
@@ -262,7 +274,7 @@ class ElasticsearchConsistencyChecker:
         q = getattr(self, queue)
 
         item = q.get()
-        self.logger.info(item)
+        logger.info(item)
 
         # Get list of files and directories
         listing = [os.path.join(item, file) for file in os.listdir(item)]
@@ -280,7 +292,7 @@ class ElasticsearchConsistencyChecker:
 
         # Download the configuration if it does not exist
         if not os.path.exists(self.spot_file):
-            self.logger.debug('Spot file does not exist. Downloading...')
+            logger.debug('Spot file does not exist. Downloading...')
             self._download_spot_conf()
 
         # Increment spot_progress to retrieve next line
@@ -292,7 +304,7 @@ class ElasticsearchConsistencyChecker:
         if line:
             if line.strip():
                 spot, path = line.strip().split()
-                self.logger.debug(f'Loading spot: {path}')
+                logger.debug(f'Loading spot: {path}')
             else:
                 # If the line is just a \n character, get the next line.
                 path = self.get_next_spot()
@@ -300,14 +312,14 @@ class ElasticsearchConsistencyChecker:
 
         else:
             # Reached EOF. Download new file
-            self.logger.debug('Reached end of spot file. Downloading new spot file')
+            logger.info('Reached end of spot file. Downloading new spot file')
             self._download_spot_conf()
             self._update_spot_progress()
 
             # Get first line
             line = get_line_in_file(self.spot_file, self.spot_progress)
             spot, path = line.strip().split()
-            self.logger.debug(f'Loading spot: {path}')
+            logger.debug(f'Loading spot: {path}')
 
         return path
 
@@ -316,7 +328,7 @@ class ElasticsearchConsistencyChecker:
         Walks a directory tree, given a path and adds the directories to the bot queue
         """
         if not os.path.exists(path):
-            self.logger.error(f'Path not found: {path}')
+            logger.error(f'Path not found: {path}')
 
         for root, dirs, _ in os.walk(path):
             abs_root = os.path.abspath(root)
@@ -324,7 +336,7 @@ class ElasticsearchConsistencyChecker:
             for dir in dirs:
                 self.bot_queue.put(os.path.join(abs_root, dir))
 
-    def start_consuming(self, dev=False):
+    def consume(self, dev=False):
 
         manual_qsize = self.manual_queue._count()
         bot_qsize = self.bot_queue._count()
@@ -336,7 +348,7 @@ class ElasticsearchConsistencyChecker:
             self.process_queue('bot_queue')
 
         if bot_qsize == 0 and not dev:
-            self.logger.debug('Queues empty, retrieving next spot.')
+            logger.info('Bot queues empty, retrieving next spot.')
             spot = self.get_next_spot()
             self.add_dirs_to_queue(spot)
 
@@ -351,12 +363,17 @@ class ElasticsearchConsistencyChecker:
 
         args = parser.parse_args()
 
-        checker = cls(args)
+        checker = cls()
 
         print("Ready")
         while True:
+
             try:
-                checker.start_consuming(dev=args.dev)
+                checker.consume(dev=args.dev)
+
+            except pika.exceptions.StreamLostError as e:
+                logger.error('Connection lost, reconnecting', exc_info=e)
+                checker.rabbit_connect()
 
             except KeyboardInterrupt:
                 break
