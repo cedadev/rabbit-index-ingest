@@ -378,6 +378,9 @@ class ElasticsearchConsistencyChecker:
             except KeyboardInterrupt:
                 break
 
+            except Exception as e:
+                logger.error(e, exc_info=True)
+                break
 
 if __name__ == '__main__':
     ElasticsearchConsistencyChecker.main()
