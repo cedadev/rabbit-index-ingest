@@ -75,7 +75,6 @@ setup(
     entry_points={
         'console_scripts': [
             'rabbit_event_indexer = rabbit_indexer.scripts.queue_consumer:main',
-            'elastic_directory_check = rabbit_indexer.scripts.check_directory:main'
         ],
     }
 )
