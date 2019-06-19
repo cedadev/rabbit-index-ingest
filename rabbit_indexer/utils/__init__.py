@@ -10,5 +10,3 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 
 from .path_tools import PathTools
-from .snippets import query_yes_no
-from .snippets import get_line_in_file
