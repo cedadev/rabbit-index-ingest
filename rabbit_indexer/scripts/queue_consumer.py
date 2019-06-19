@@ -21,7 +21,7 @@ import functools
 
 logger = logging.getLogger()
 
-elastic_logger = logger.getLogger('elasticsearch')
+elastic_logger = logging.getLogger('elasticsearch')
 elastic_logger.setLevel(logging.WARNING)
 
 class QueueHandler:
