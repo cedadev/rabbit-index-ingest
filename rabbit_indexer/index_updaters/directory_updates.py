@@ -143,23 +143,3 @@ class DirectoryUpdateHandler(UpdateHandler):
                 ]
             )
 
-    # def _process_spot_roots(self):
-    #     """
-    #     Periodically run an indexing job on the top level as these are not picked up in the
-    #     normal way. This is run when a new spot mapping is downloaded.
-    #     """
-    #
-    #     spot_paths = self.pt.spots.path2spotmapping
-    #
-    #     content_list = []
-    #     for spot in spot_paths:
-    #
-    #         metadata, _ = self.pt.generate_path_metadata(spot)
-    #
-    #         if metadata:
-    #             content_list.append({
-    #                 "id": self.pt.generate_id(spot),
-    #                 "document": metadata
-    #             })
-    #
-    #     self.index_updater.add_dirs(content_list)
