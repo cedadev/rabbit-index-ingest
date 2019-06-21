@@ -18,6 +18,7 @@ import argparse
 import logging
 import os
 import functools
+import elasticsearch
 
 logger = logging.getLogger()
 
@@ -159,6 +160,9 @@ class QueueHandler:
             # Acknowledge message
             cb = functools.partial(self._acknowledge_message, ch, method.delivery_tag)
             connection.add_callback_threadsafe(cb)
+
+        except elasticsearch.exceptions.TransportError:
+            raise
 
         except Exception as e:
             # Catch all exceptions in the scanning code and log them
