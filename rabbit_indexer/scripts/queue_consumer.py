@@ -161,12 +161,11 @@ class QueueHandler:
             cb = functools.partial(self._acknowledge_message, ch, method.delivery_tag)
             connection.add_callback_threadsafe(cb)
 
-        except elasticsearch.exceptions.TransportError:
-            raise
-
         except Exception as e:
             # Catch all exceptions in the scanning code and log them
             logger.error(f'Error occurred while scanning: {filepath}', exc_info=e)
+            raise
+
 
     def run(self):
         """
