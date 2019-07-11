@@ -90,7 +90,7 @@ class QueueHandler:
         channel.exchange_declare(exchange=self.rabbit_route, exchange_type='fanout')
 
         # Declare queue
-        channel.queue_declare(queue=self.queue_name, auto_delete=True)
+        channel.queue_declare(queue=self.queue_name, auto_delete=False)
         channel.queue_bind(exchange=self.rabbit_route, queue=self.queue_name)
 
         # Set callback
