@@ -76,11 +76,21 @@ class PathTools:
         :return: Dictionary containing MOLES title, url and record_type
         """
 
+        # Condition path - remove trailing slash
+        if path.endswith('/'):
+            path = path[:-1]
+
         # Check for path match in stored dictionary
         test_path = path
         while test_path != '/' and test_path:
 
             result = self.moles_mapping.get(test_path)
+
+            # Try adding a slash to see if it matches. Some records in MOLES are stored
+            # with a slash, others are not
+            if not result:
+                result = self.moles_mapping.get(test_path + '/')
+
             if result is not None:
                 return result
 
@@ -95,7 +105,7 @@ class PathTools:
         except Timeout:
             return
 
-        # Update moles
+        # Update moles mapping
         if response:
             self.moles_mapping[path] = response.json()
             return response.json()
