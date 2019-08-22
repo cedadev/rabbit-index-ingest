@@ -55,7 +55,8 @@ class QueueHandler:
         self.credentials = pika.PlainCredentials(rabbit_user, rabbit_password)
 
         # Set other shared attributes
-        self.rabbit_route = conf.get('server', 'log_exchange')
+        self.log_exchange = conf.get('server', 'log_exchange')
+        self.fbi_exchange = conf.get('server', 'fbi_exchange')
         self.queue_name = conf.get('server', 'queue')
         self.path_tools = PathTools(moles_mapping_url=moles_url)
         self.processing_stop = False
@@ -86,12 +87,16 @@ class QueueHandler:
         channel = connection.channel()
         channel.basic_qos(prefetch_count=1)
 
-        # Connect the channel to the exchange
-        channel.exchange_declare(exchange=self.rabbit_route, exchange_type='fanout')
+        # Declare relevant exchanges
+        channel.exchange_declare(exchange=self.log_exchange, exchange_type='fanout')
+        channel.exchange_declare(exchange=self.fbi_exchange, exchange_type='fanout')
 
-        # Declare queue
+        # Bind fbi exchange to log exchange
+        channel.exchange_bind(destination=self.fbi_exchange, source=self.log_exchange)
+
+        # Declare queue and bind queue to the fbi exchange
         channel.queue_declare(queue=self.queue_name, auto_delete=False)
-        channel.queue_bind(exchange=self.rabbit_route, queue=self.queue_name)
+        channel.queue_bind(exchange=self.fbi_exchange, queue=self.queue_name)
 
         # Set callback
         callback = functools.partial(self._callback, connection=connection)

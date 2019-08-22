@@ -23,7 +23,7 @@ with open("README.md") as readme_file:
 
 setup(
     name='rabbit_indexer',
-    version=1.1,
+    version=2.0,
     description='RabbitMQ consuming programme to process deposit server events and update the ES indices.',
     author='Richard Smith',
     author_email='richard.d.smith@stfc.ac.uk',
