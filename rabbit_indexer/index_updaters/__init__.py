@@ -10,3 +10,5 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 from .directory_updates import DirectoryUpdateHandler
 from .fbs_updates import FBSUpdateHandler
+from .fast_fbs_updates import FastFBSUpdateHandler
+from .fast_directory_updates import FastDirectoryUpdateHandler

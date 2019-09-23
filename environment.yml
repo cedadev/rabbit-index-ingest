@@ -1,4 +1,4 @@
-name: rabbit-fbi
+name: rabbit_fbi
 channels:
   - conda-forge
   - defaults
@@ -111,11 +111,10 @@ dependencies:
   - zict=0.1.4
   - zlib=1.2.11
   - pip:
-    - git+https://github.com/cedadev/ceda-elasticsearch-tools@v1.0.0
+    - git+https://github.com/cedadev/ceda-elasticsearch-tools@v1.2.0
     - git+https://github.com/cedadev/ceda-fbs@pip_install
     - git+https://github.com/cedadev/nappy.git
     - docopt==0.6.2
     - elasticsearch==6.3.1
     - urllib3==1.24.3
-prefix: /Users/vdn73631/miniconda3/envs/rabbit-fbi
 

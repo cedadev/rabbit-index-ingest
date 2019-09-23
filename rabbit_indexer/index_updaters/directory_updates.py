@@ -36,7 +36,7 @@ class DirectoryUpdateHandler(UpdateHandler):
             }
         )
 
-    def process_event(self, path, action):
+    def process_event(self, body):
         """
         Takes the events from rabbit and sends them to the appropriate processor
 
@@ -44,23 +44,26 @@ class DirectoryUpdateHandler(UpdateHandler):
         :param path: The directory or readme path to process
 
         """
-        self.logger.info(f'{path}:{action}')
+
+        message = self._decode_message(body)
+
+        self.logger.info(f'{message.filepath}:{message.action}')
 
         # Check to see if enough time has elapsed to update the mapping
         self._update_mappings()
 
         # Send the message to the appropriate processor method
-        if action == 'MKDIR':
-            self._process_creations(path)
+        if message.action == 'MKDIR':
+            self._process_creations(message.filepath)
 
-        elif action == 'RMDIR':
-            self._process_deletions(path)
+        elif message.action == 'RMDIR':
+            self._process_deletions(message.filepath)
 
-        elif action == 'SYMLINK':
-            self._process_symlinks(path)
+        elif message.action == 'SYMLINK':
+            self._process_symlinks(message.filepath)
 
-        elif action == '00README':
-            self._process_readmes(path)
+        elif message.action == '00README':
+            self._process_readmes(message.filepath)
 
     def _process_creations(self, path):
         """
@@ -83,6 +86,7 @@ class DirectoryUpdateHandler(UpdateHandler):
                 ]
             )
 
+
     def _process_deletions(self, path):
         """
         Process the deletion of a directory
@@ -101,24 +105,14 @@ class DirectoryUpdateHandler(UpdateHandler):
 
     def _process_symlinks(self, path):
         """
-        Process the creation of a symlinked directory
+        Method to make it explicit what action is being
+        performed but the actual code to run is the same
+        as for creations.
 
-        :param path: Directory path
+        :param path: filepath
         """
 
-        # Get the metadata
-        metadata, _ = self.pt.generate_path_metadata(path)
-
-        # Index the symlink
-        if metadata:
-            self.index_updater.add_dirs(
-                [
-                    {
-                        'id': self.pt.generate_id(path),
-                        'document': metadata
-                    }
-                ]
-            )
+        self._process_creations(path)
 
     def _process_readmes(self, path):
         """
