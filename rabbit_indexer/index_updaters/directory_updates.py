@@ -11,7 +11,8 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 from ceda_elasticsearch_tools.index_tools import CedaDirs
 import os
 from rabbit_indexer.index_updaters.base import UpdateHandler
-
+from time import sleep
+from rabbit_indexer.utils.decorators import wait_for_file
 
 class DirectoryUpdateHandler(UpdateHandler):
 
@@ -65,12 +66,17 @@ class DirectoryUpdateHandler(UpdateHandler):
         elif message.action == '00README':
             self._process_readmes(message.filepath)
 
+    @wait_for_file
     def _process_creations(self, path):
         """
         Process the creation of a new directory
 
         :param path: Directory path
         """
+
+        # Check if directory exists.
+        if not os.path.exists(path):
+            sleep(60)
 
         # Get the metadata
         metadata, _ = self.pt.generate_path_metadata(path)
@@ -114,6 +120,7 @@ class DirectoryUpdateHandler(UpdateHandler):
 
         self._process_creations(path)
 
+    @wait_for_file
     def _process_readmes(self, path):
         """
         Process the addition of a 00README file

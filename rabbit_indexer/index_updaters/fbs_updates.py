@@ -13,6 +13,7 @@ from fbs.proc.file_handlers.handler_picker import HandlerPicker
 from fbs.proc.common_util.util import cfg_read
 import os
 from rabbit_indexer.index_updaters.base import UpdateHandler
+from rabbit_indexer.utils.decorators import wait_for_file
 
 
 class FBSUpdateHandler(UpdateHandler):
@@ -72,6 +73,7 @@ class FBSUpdateHandler(UpdateHandler):
         elif message.action == 'DELETE':
             self._process_deletions(message.filepath)
 
+    @wait_for_file
     def _process_deposits(self, path):
         """
         Take the given file path and add it to the FBI index
