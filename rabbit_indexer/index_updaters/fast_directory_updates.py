@@ -52,9 +52,7 @@ class FastDirectoryUpdateHandler(DirectoryUpdateHandler):
         :return: document metadata
         """
         return {
-            'archive_path': path,
             'depth': path.count('/'),
-            'link': False,
             'path': path,
             'type': 'dir',
             'dir': os.path.basename(path)
