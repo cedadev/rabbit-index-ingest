@@ -14,10 +14,16 @@ import argparse
 import logging
 import os
 import functools
+from rabbit_indexer.index_updaters import FastFBSUpdateHandler
+from rabbit_indexer.index_updaters import FastDirectoryUpdateHandler
 
 logger = logging.getLogger()
 
 class FastQueueConsumer(QueueHandler):
+
+    def _get_handlers(self):
+        self.directory_handler = FastDirectoryUpdateHandler(path_tools=self.path_tools, conf=self._conf)
+        self.fbs_handler = FastFBSUpdateHandler(path_tools=self.path_tools, conf=self._conf)
 
     def callback(self, ch, method, properties, body, connection):
         """
@@ -34,42 +40,31 @@ class FastQueueConsumer(QueueHandler):
         # Decode the byte string to utf-8
         body = body.decode('utf-8')
 
-        split_line = body.strip().split(":")
-
-        # Several unused splits but here to preserve the format of the message
-        # date_hour = split_line[0]
-        # min = split_line[1]
-        # sec = split_line[2]
-        filepath = split_line[3]
-        action = split_line[4]
-        # filesize = split_line[5]
-        # message = ":".join(split_line[6:])
-
         try:
 
             if self.deposit.match(body):
-                self.fbs_handler.process_event(filepath, action)
-
-                if self.readme00.match(body):
-                    self.directory_handler.process_event(filepath, action)
+                self.fbs_handler.process_event(body)
 
             elif self.deletion.match(body):
-                self.fbs_handler.process_event(filepath, action)
+                self.fbs_handler.process_event(body)
 
             elif self.mkdir.match(body):
-                self.directory_handler.process_event(filepath, action)
+                self.directory_handler.process_event(body)
 
             elif self.rmdir.match(body):
-                self.directory_handler.process_event(filepath, action)
+                self.directory_handler.process_event(body)
 
             elif self.symlink.match(body):
-                self.directory_handler.process_event(filepath, action)
+                self.directory_handler.process_event(body)
 
             # Acknowledge message
             cb = functools.partial(self._acknowledge_message, ch, method.delivery_tag)
             connection.add_callback_threadsafe(cb)
 
         except Exception as e:
+            split_line = body.strip().split(":")
+            filepath = split_line[3]
+
             # Catch all exceptions in the scanning code and log them
             logger.error(f'Error occurred while scanning: {filepath}', exc_info=e)
             raise

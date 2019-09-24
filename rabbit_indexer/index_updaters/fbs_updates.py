@@ -13,6 +13,7 @@ from fbs.proc.file_handlers.handler_picker import HandlerPicker
 from fbs.proc.common_util.util import cfg_read
 import os
 from rabbit_indexer.index_updaters.base import UpdateHandler
+from rabbit_indexer.utils.decorators import wait_for_file
 
 
 class FBSUpdateHandler(UpdateHandler):
@@ -52,23 +53,27 @@ class FBSUpdateHandler(UpdateHandler):
             }
         )
 
-    def process_event(self, path, action):
+    def process_event(self, body):
         """
 
         :param path: The file path to process
         :param action: The action to perform on the filepath
         """
-        self.logger.info(f'{path}:{action}')
+
+        message = self._decode_message(body)
+
+        self.logger.info(f'{message.filepath}:{message.action}')
 
         # Check to see if enough time has elapsed to update the mapping
         self._update_mappings()
 
-        if action == 'DEPOSIT':
-            self._process_deposits(path)
+        if message.action == 'DEPOSIT':
+            self._process_deposits(message.filepath)
 
-        elif action == 'DELETE':
-            self._process_deletions(path)
+        elif message.action == 'DELETE':
+            self._process_deletions(message.filepath)
 
+    @wait_for_file
     def _process_deposits(self, path):
         """
         Take the given file path and add it to the FBI index

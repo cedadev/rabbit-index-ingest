@@ -14,8 +14,27 @@ import argparse
 import logging
 import os
 import functools
+from multiprocessing import Process
 
 logger = logging.getLogger()
+
+def timeout_method(func, args, timeout=60):
+    """
+    Start a new process with a timeout to handle problem files
+    :param func: function to run
+    :param args: function arguments
+    :param timeout: seconds
+    """
+
+    # Create process
+    action_process = Process(target=func, args=args)
+
+    # Start process and wait for timeout
+    action_process.start()
+    action_process.join(timeout=timeout)
+
+    # Terminate process
+    action_process.terminate()
 
 
 class SlowQueueConsumer(QueueHandler):
@@ -35,21 +54,20 @@ class SlowQueueConsumer(QueueHandler):
         # Decode the byte string to utf-8
         body = body.decode('utf-8')
 
-        split_line = body.strip().split(":")
-
-        # Several unused splits but here to preserve the format of the message
-        # date_hour = split_line[0]
-        # min = split_line[1]
-        # sec = split_line[2]
-        filepath = split_line[3]
-        action = split_line[4]
-        # filesize = split_line[5]
-        # message = ":".join(split_line[6:])
-
         try:
 
             if self.deposit.match(body):
-                self.fbs_handler.process_event(filepath, action)
+                self.fbs_handler.process_event(body)
+                # timeout_method(self.fbs_handler.process_event, args=(filepath, action))
+
+                if self.readme00.match(body):
+                    self.directory_handler.process_event(body)
+
+            elif self.mkdir.match(body):
+                self.directory_handler.process_event(body)
+
+            elif self.symlink.match(body):
+                self.directory_handler.process_event(body)
 
             # Acknowledge message
             cb = functools.partial(self._acknowledge_message, ch, method.delivery_tag)
@@ -57,6 +75,8 @@ class SlowQueueConsumer(QueueHandler):
 
         except Exception as e:
             # Catch all exceptions in the scanning code and log them
+            split_line = body.strip().split(":")
+            filepath = split_line[3]
             logger.error(f'Error occurred while scanning: {filepath}', exc_info=e)
             raise
 

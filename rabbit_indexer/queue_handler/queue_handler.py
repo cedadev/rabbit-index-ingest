@@ -58,9 +58,18 @@ class QueueHandler:
         self.path_tools = PathTools(moles_mapping_url=moles_url)
         self.processing_stop = False
 
+        self._conf = conf
+
         # Init event handlers
-        self.directory_handler = DirectoryUpdateHandler(path_tools=self.path_tools, conf=conf)
-        self.fbs_handler = FBSUpdateHandler(path_tools=self.path_tools, conf=conf)
+        self._get_handlers()
+
+    def _get_handlers(self):
+        """
+        Get the stream handlers. Method to allow subclasses to modify which handlers to load.
+        """
+
+        self.directory_handler = DirectoryUpdateHandler(path_tools=self.path_tools, conf=self._conf)
+        self.fbs_handler = FBSUpdateHandler(path_tools=self.path_tools, conf=self._conf)
 
     def _connect(self):
         """
