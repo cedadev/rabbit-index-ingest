@@ -126,4 +126,6 @@ class FBSUpdateHandler(UpdateHandler):
             {'id': self.pt.generate_id(path)}
         ]
 
+        print(deletion_list)
+
         self.index_updater.delete_files(deletion_list)
