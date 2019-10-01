@@ -122,8 +122,8 @@ class FBSUpdateHandler(UpdateHandler):
         :param path: File path
         """
 
-        deletion_list = list(
+        deletion_list = [
             {'id': self.pt.generate_id(path)}
-        )
+        ]
 
         self.index_updater.delete_files(deletion_list)
