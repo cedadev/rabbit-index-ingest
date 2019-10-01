@@ -70,7 +70,7 @@ class FBSUpdateHandler(UpdateHandler):
         if message.action == 'DEPOSIT':
             self._process_deposits(message.filepath)
 
-        elif message.action == 'DELETE':
+        elif message.action == 'REMOVE':
             self._process_deletions(message.filepath)
 
     @wait_for_file
