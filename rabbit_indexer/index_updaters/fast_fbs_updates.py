@@ -31,7 +31,7 @@ class FastFBSUpdateHandler(FBSUpdateHandler):
         if message.action == 'DEPOSIT':
             self._process_deposits(message)
 
-        elif message.action == 'DELETE':
+        elif message.action == 'REMOVE':
             self._process_deletions(message.filepath)
 
     def _process_deposits(self, message):
