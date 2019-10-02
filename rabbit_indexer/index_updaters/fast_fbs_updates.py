@@ -75,4 +75,5 @@ class FastFBSUpdateHandler(FBSUpdateHandler):
             'directory': dirname,
             'size': message.filesize,
             'name': filename,
+            'location': 'on_disk'
         }]
