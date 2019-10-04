@@ -70,10 +70,12 @@ class FastFBSUpdateHandler(FBSUpdateHandler):
             file_type = "File without extension."
 
         return [{
-            'name_auto': filename,
-            'type': file_type,
-            'directory': dirname,
-            'size': message.filesize,
-            'name': filename,
-            'location': 'on_disk'
+            'info': {
+                'name_auto': filename,
+                'type': file_type,
+                'directory': dirname,
+                'size': message.filesize,
+                'name': filename,
+                'location': 'on_disk'
+            }
         }]
