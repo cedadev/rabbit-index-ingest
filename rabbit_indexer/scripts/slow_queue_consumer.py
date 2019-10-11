@@ -63,7 +63,13 @@ class SlowQueueConsumer(QueueHandler):
                 if self.readme00.match(body):
                     self.directory_handler.process_event(body)
 
+            elif self.deletion.match(body):
+                self.fbs_handler.process_event(body)
+
             elif self.mkdir.match(body):
+                self.directory_handler.process_event(body)
+
+            elif self.rmdir.match(body):
                 self.directory_handler.process_event(body)
 
             elif self.symlink.match(body):
