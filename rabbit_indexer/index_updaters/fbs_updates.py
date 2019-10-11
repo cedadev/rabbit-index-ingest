@@ -14,6 +14,7 @@ from fbs.proc.common_util.util import cfg_read
 import os
 from rabbit_indexer.index_updaters.base import UpdateHandler
 from rabbit_indexer.utils.decorators import wait_for_file
+from elasticsearch.helpers import BulkIndexError
 
 
 class FBSUpdateHandler(UpdateHandler):
@@ -125,5 +126,7 @@ class FBSUpdateHandler(UpdateHandler):
         deletion_list = [
             {'id': self.pt.generate_id(path)}
         ]
-
-        self.index_updater.delete_files(deletion_list)
+        try:
+            self.index_updater.delete_files(deletion_list)
+        except BulkIndexError as e:
+            pass
