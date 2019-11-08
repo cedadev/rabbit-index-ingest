@@ -16,7 +16,7 @@ from requests.exceptions import Timeout
 
 class PathTools:
 
-    def __init__(self, moles_mapping_url='https://catalogue.ceda.ac.uk/api/v0/obs/all'):
+    def __init__(self, moles_mapping_url='https://api.catalogue.ceda.ac.uk/api/v0/obs/all'):
 
         self.moles_mapping_url = moles_mapping_url
 
@@ -99,7 +99,7 @@ class PathTools:
 
         # No match has been found
         # Search MOLES API for path match
-        url = f'http://catalogue.ceda.ac.uk/api/v0/obs/get_info{path}'
+        url = f'http://api.catalogue.ceda.ac.uk/api/v0/obs/get_info{path}'
         try:
             response = requests.get(url, timeout=10)
         except Timeout:
