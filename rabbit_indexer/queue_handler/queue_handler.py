@@ -15,11 +15,17 @@ from rabbit_indexer.index_updaters import FBSUpdateHandler
 from rabbit_indexer.index_updaters import DirectoryUpdateHandler
 import logging
 import functools
+from collections import namedtuple
+import json
+from datetime import datetime
 
 logger = logging.getLogger()
 
 elastic_logger = logging.getLogger('elasticsearch')
 elastic_logger.setLevel(logging.WARNING)
+
+
+IngestMessage = namedtuple('IngestMessage',['datetime','filepath','action','filesize','message'])
 
 
 class QueueHandler:
@@ -28,12 +34,54 @@ class QueueHandler:
     """
 
     # Regex patterns
-    deposit = re.compile("^\d{4}[-](\d{2})[-]\d{2}.*:DEPOSIT:")
-    deletion = re.compile("^\d{4}[-](\d{2})[-]\d{2}.*:REMOVE:")
-    mkdir = re.compile("^\d{4}[-](\d{2})[-]\d{2}.*:MKDIR:")
-    rmdir = re.compile("^\d{4}[-](\d{2})[-]\d{2}.*:RMDIR:")
-    symlink = re.compile("^\d{4}[-](\d{2})[-]\d{2}.*:SYMLINK:")
     readme00 = re.compile("^\d{4}[-](\d{2})[-]\d{2}.*00README:")
+
+    @staticmethod
+    def decode_message(body):
+        """
+        Takes the message and turns into a dictionary.
+        String message format when split on :
+            date_hour = split_line[0]
+            min = split_line[1]
+            sec = split_line[2]
+            path = split_line[3]
+            action = split_line[4]
+            filesize = split_line[5]
+            message = ":".join(split_line[6:])
+
+        :param body: Message body, either a json string or text
+        :return: dictionary of format
+            {
+                'datetime': ':'.join(split_line[:3]),
+                'filepath': split_line[3],
+                'action': split_line[4],
+                'filesize': split_line[5],
+                'message': ':'.join(split_line[6:])
+            }
+
+        """
+
+        # Decode the byte string to utf-8
+        body = body.decode('utf-8')
+
+        try:
+            msg = json.loads(body)
+            return IngestMessage(**msg)
+
+        except json.JSONDecodeError:
+            # Assume the message is in the old format and split on :
+            split_line = body.strip().split(":")
+
+            msg = {
+                'datetime': ':'.join(split_line[:3]),
+                'filepath': split_line[3],
+                'action': split_line[4],
+                'filesize': split_line[5],
+                'message': ':'.join(split_line[6:])
+            }
+
+        return IngestMessage(**msg)
+
 
     def __init__(self, conf):
 
@@ -109,7 +157,8 @@ class QueueHandler:
 
         return channel
 
-    def _acknowledge_message(self, channel, delivery_tag):
+    @staticmethod
+    def _acknowledge_message(channel, delivery_tag):
         """
         Acknowledge message
 
@@ -164,3 +213,5 @@ class QueueHandler:
 
                 channel.stop_consuming()
                 break
+
+

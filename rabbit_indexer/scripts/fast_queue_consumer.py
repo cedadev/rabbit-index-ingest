@@ -37,25 +37,15 @@ class FastQueueConsumer(QueueHandler):
         :param connection: Pika connection
         """
 
-        # Decode the byte string to utf-8
-        body = body.decode('utf-8')
+        message = self.decode_message(body)
 
         try:
 
-            if self.deposit.match(body):
-                self.fbs_handler.process_event(body)
+            if message.action in ['DEPOSIT', 'REMOVE']:
+                self.fbs_handler.process_event(message)
 
-            elif self.deletion.match(body):
-                self.fbs_handler.process_event(body)
-
-            elif self.mkdir.match(body):
-                self.directory_handler.process_event(body)
-
-            elif self.rmdir.match(body):
-                self.directory_handler.process_event(body)
-
-            elif self.symlink.match(body):
-                self.directory_handler.process_event(body)
+            elif message.action in ['MKDIR', 'RMDIR', 'SYMLINK']:
+                self.directory_handler.process_event(message)
 
             # Acknowledge message
             cb = functools.partial(self._acknowledge_message, ch, method.delivery_tag)

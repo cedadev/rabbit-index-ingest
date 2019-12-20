@@ -1,10 +1,8 @@
 
 from datetime import datetime
 import logging
-import json
-from collections import namedtuple
+import time
 
-IngestMessage = namedtuple('IngestMessage',['datetime','filepath','action','filesize','message'])
 
 class UpdateHandler:
 
@@ -43,45 +41,13 @@ class UpdateHandler:
                 self.update_time = datetime.now()
 
     @staticmethod
-    def _decode_message(body):
-        """
-        Takes the message and turns into a dictionary.
-        String message format when split on :
-            date_hour = split_line[0]
-            min = split_line[1]
-            sec = split_line[2]
-            path = split_line[3]
-            action = split_line[4]
-            filesize = split_line[5]
-            message = ":".join(split_line[6:])
+    def _wait_for_file(message):
 
-        :param body: Message body, either a json string or text
-        :return: dictionary of format
-            {
-                'datetime': ':'.join(split_line[:3]),
-                'filepath': split_line[3],
-                'action': split_line[4],
-                'filesize': split_line[5],
-                'message': ':'.join(split_line[6:])
-            }
+        timestamp = datetime.strptime(message.datetime,'%Y-%m-%d %H:%M:%S')
 
-        """
+        t_delta = datetime.now() - timestamp
 
+        if t_delta.seconds < 300:
 
-        try:
-            msg = json.loads(body)
-            return IngestMessage(**msg)
-
-        except json.JSONDecodeError:
-            # Assume the message is in the old format and split on :
-            split_line = body.strip().split(":")
-
-            msg = {
-                'datetime': ':'.join(split_line[:3]),
-                'filepath': split_line[3],
-                'action': split_line[4],
-                'filesize': split_line[5],
-                'message': ':'.join(split_line[6:])
-            }
-
-        return IngestMessage(**msg)
+            if not os.path.exists(message.filepath):
+                time.sleep(60)
