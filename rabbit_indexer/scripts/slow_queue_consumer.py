@@ -54,40 +54,26 @@ class SlowQueueConsumer(QueueHandler):
 
         message = self.decode_message(body)
 
-        if message.action not in ['DEPOSIT', 'REMOVE','MKDIR','RMDIR','SYMLINK']:
+        try:
+            if message.action in ['DEPOSIT', 'REMOVE']:
+                self.fbs_handler.process_event(message)
+
+                if message.filename.endswith('00README'):
+                    self.directory_handler.process_event(message)
+
+            elif message.action in ['MKDIR', 'RMDIR', 'SYMLINK']:
+                self.directory_handler.process_event(message)
+
             # Acknowledge message
             cb = functools.partial(self._acknowledge_message, ch, method.delivery_tag)
             connection.add_callback_threadsafe(cb)
 
-        # If the message is redelivered or the path exists run processing
-        elif method.redelivered or os.path.exists(message.filepath):
-
-            try:
-                if message.action in ['DEPOSIT', 'REMOVE']:
-                    self.fbs_handler.process_event(message)
-
-                    if message.filename.endswith('00README'):
-                        self.directory_handler.process_event(message)
-
-                elif message.action in ['MKDIR', 'RMDIR', 'SYMLINK']:
-                    self.directory_handler.process_event(message)
-
-                # Acknowledge message
-                cb = functools.partial(self._acknowledge_message, ch, method.delivery_tag)
-                connection.add_callback_threadsafe(cb)
-
-            except Exception as e:
-                # Catch all exceptions in the scanning code and log them
-                split_line = body.strip().split(":")
-                filepath = split_line[3]
-                logger.error(f'Error occurred while scanning: {filepath}', exc_info=e)
-                raise
-
-        else:
-            # Path does not exist and message has not been redelivered.
-            # Send message to back of queue to build in a wait period
-            cb = functools.partial(self._requeue_message, ch, method.delivery_tag)
-            connection.add_callback_threadsafe(cb)
+        except Exception as e:
+            # Catch all exceptions in the scanning code and log them
+            split_line = body.strip().split(":")
+            filepath = split_line[3]
+            logger.error(f'Error occurred while scanning: {filepath}', exc_info=e)
+            raise
 
 
 def main():

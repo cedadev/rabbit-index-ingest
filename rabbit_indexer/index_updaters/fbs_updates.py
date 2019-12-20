@@ -67,17 +67,20 @@ class FBSUpdateHandler(UpdateHandler):
         self._update_mappings()
 
         if message.action == 'DEPOSIT':
-            self._process_deposits(message.filepath)
+            self._process_deposits(message)
 
         elif message.action == 'REMOVE':
             self._process_deletions(message.filepath)
 
-    @wait_for_file
-    def _process_deposits(self, path):
+    def _process_deposits(self, message):
         """
         Take the given file path and add it to the FBI index
         :param path: File path
         """
+
+        # Check if path exists and has had sufficient time to appear
+        self._wait_for_file(message)
+        path = message.filepath
 
         handler = self.handler_factory.pick_best_handler(path)
 

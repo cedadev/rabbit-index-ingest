@@ -1,6 +1,7 @@
 
 from datetime import datetime
 import logging
+import time
 
 
 class UpdateHandler:
@@ -39,3 +40,14 @@ class UpdateHandler:
             if successful:
                 self.update_time = datetime.now()
 
+    @staticmethod
+    def _wait_for_file(message):
+
+        timestamp = datetime.strptime(message.datetime,'%Y-%m-%d %H:%M:%S')
+
+        t_delta = datetime.now() - timestamp
+
+        if t_delta.seconds < 300:
+
+            if not os.path.exists(message.filepath):
+                time.sleep(60)

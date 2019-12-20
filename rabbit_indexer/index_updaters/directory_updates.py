@@ -53,7 +53,7 @@ class DirectoryUpdateHandler(UpdateHandler):
 
         # Send the message to the appropriate processor method
         if message.action == 'MKDIR':
-            self._process_creations(message.filepath)
+            self._process_creations(message)
 
         elif message.action == 'RMDIR':
             self._process_deletions(message.filepath)
@@ -64,23 +64,24 @@ class DirectoryUpdateHandler(UpdateHandler):
         elif message.action == '00README':
             self._process_readmes(message.filepath)
 
-    @wait_for_file
-    def _process_creations(self, path):
+    def _process_creations(self, message):
         """
         Process the creation of a new directory
 
         :param path: Directory path
         """
 
+        self._wait_for_file(message)
+
         # Get the metadata
-        metadata, _ = self.pt.generate_path_metadata(path)
+        metadata, _ = self.pt.generate_path_metadata(message.filepath)
 
         # Index new directory
         if metadata:
             self.index_updater.add_dirs(
                 [
                     {
-                        'id': self.pt.generate_id(path),
+                        'id': self.pt.generate_id(message.filepath),
                         'document': metadata
                     }
                 ]

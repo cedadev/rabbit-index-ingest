@@ -17,6 +17,7 @@ import logging
 import functools
 from collections import namedtuple
 import json
+from datetime import datetime
 
 logger = logging.getLogger()
 
@@ -173,19 +174,6 @@ class QueueHandler:
         logger.debug(f'Acknowledging message: {delivery_tag}')
         if channel.is_open:
             channel.basic_ack(delivery_tag)
-
-    @staticmethod
-    def _requeue_message(channel, delivery_tag):
-        """
-
-        :param channel:
-        :param delivery_tag:
-        :return:
-        """
-        logger.debug(f'Requeueing message: {delivery_tag}')
-
-        if channel.is_open:
-            channel.basic_reject(delivery_tag)
 
     def callback(self, ch, method, properties, body, connection):
         """
