@@ -53,12 +53,13 @@ class SlowQueueConsumer(QueueHandler):
         """
 
         message = self.decode_message(body)
+        body = body.decode('utf-8')
 
         try:
             if message.action in ['DEPOSIT', 'REMOVE']:
                 self.fbs_handler.process_event(message)
 
-                if message.filename.endswith('00README'):
+                if self.readme00.match(body):
                     self.directory_handler.process_event(message)
 
             elif message.action in ['MKDIR', 'RMDIR', 'SYMLINK']:

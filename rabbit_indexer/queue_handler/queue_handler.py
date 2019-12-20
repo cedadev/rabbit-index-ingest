@@ -34,11 +34,6 @@ class QueueHandler:
     """
 
     # Regex patterns
-    # deposit = re.compile("^\d{4}[-](\d{2})[-]\d{2}.*:DEPOSIT:")
-    # deletion = re.compile("^\d{4}[-](\d{2})[-]\d{2}.*:REMOVE:")
-    # mkdir = re.compile("^\d{4}[-](\d{2})[-]\d{2}.*:MKDIR:")
-    # rmdir = re.compile("^\d{4}[-](\d{2})[-]\d{2}.*:RMDIR:")
-    # symlink = re.compile("^\d{4}[-](\d{2})[-]\d{2}.*:SYMLINK:")
     readme00 = re.compile("^\d{4}[-](\d{2})[-]\d{2}.*00README:")
 
     @staticmethod
