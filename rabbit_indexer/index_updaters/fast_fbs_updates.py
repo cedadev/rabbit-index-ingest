@@ -19,14 +19,12 @@ class FastFBSUpdateHandler(FBSUpdateHandler):
     be available.
     """
 
-    def process_event(self, body):
+    def process_event(self, message):
         """
         Only use information which you can get from the message.
         Does not touch the file system
         :param body: ingest message
         """
-
-        message = self._decode_message(body)
 
         if message.action == 'DEPOSIT':
             self._process_deposits(message)

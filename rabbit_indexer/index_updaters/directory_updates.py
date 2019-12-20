@@ -37,7 +37,7 @@ class DirectoryUpdateHandler(UpdateHandler):
             }
         )
 
-    def process_event(self, body):
+    def process_event(self, message):
         """
         Takes the events from rabbit and sends them to the appropriate processor
 
@@ -45,8 +45,6 @@ class DirectoryUpdateHandler(UpdateHandler):
         :param path: The directory or readme path to process
 
         """
-
-        message = self._decode_message(body)
 
         self.logger.info(f'{message.filepath}:{message.action}')
 
@@ -73,10 +71,6 @@ class DirectoryUpdateHandler(UpdateHandler):
 
         :param path: Directory path
         """
-
-        # Check if directory exists.
-        if not os.path.exists(path):
-            sleep(60)
 
         # Get the metadata
         metadata, _ = self.pt.generate_path_metadata(path)

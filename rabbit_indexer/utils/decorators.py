@@ -12,7 +12,7 @@ import os
 from functools import wraps
 from time import sleep
 
-DELAY = 60
+DELAY = 20
 
 def wait_for_file(func):
     """

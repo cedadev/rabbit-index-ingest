@@ -39,6 +39,7 @@ def timeout_method(func, args, timeout=60):
 
 class SlowQueueConsumer(QueueHandler):
 
+
     def callback(self, ch, method, properties, body, connection):
         """
         Callback to run during basic consume routine.
@@ -51,40 +52,37 @@ class SlowQueueConsumer(QueueHandler):
         :param connection: Pika connection
         """
 
-        # Decode the byte string to utf-8
-        body = body.decode('utf-8')
+        message = self.decode_message(body)
 
-        try:
+        # If the message is redelivered or the path exists run processing
+        if method.redelivered or os.path.exists(message.filepath):
 
-            if self.deposit.match(body):
-                self.fbs_handler.process_event(body)
-                # timeout_method(self.fbs_handler.process_event, args=(filepath, action))
+            try:
+                if message.action in ['DEPOSIT', 'REMOVE']:
+                    self.fbs_handler.process_event(message)
 
-                if self.readme00.match(body):
-                    self.directory_handler.process_event(body)
+                    if message.filename.endswith('00README'):
+                        self.directory_handler.process_event(message)
 
-            elif self.deletion.match(body):
-                self.fbs_handler.process_event(body)
+                elif message.action in ['MKDIR', 'RMDIR', 'SYMLINK']:
+                    self.directory_handler.process_event(message)
 
-            elif self.mkdir.match(body):
-                self.directory_handler.process_event(body)
+                # Acknowledge message
+                cb = functools.partial(self._acknowledge_message, ch, method.delivery_tag)
+                connection.add_callback_threadsafe(cb)
 
-            elif self.rmdir.match(body):
-                self.directory_handler.process_event(body)
+            except Exception as e:
+                # Catch all exceptions in the scanning code and log them
+                split_line = body.strip().split(":")
+                filepath = split_line[3]
+                logger.error(f'Error occurred while scanning: {filepath}', exc_info=e)
+                raise
 
-            elif self.symlink.match(body):
-                self.directory_handler.process_event(body)
+        # Path does not exist and message has not been redelivered.
+        # Send message to back of queue to build in a wait period
+        cb = functools.partial(self._requeue_message, ch, method.delivery_tag)
+        connection.add_callback_threadsafe(cb)
 
-            # Acknowledge message
-            cb = functools.partial(self._acknowledge_message, ch, method.delivery_tag)
-            connection.add_callback_threadsafe(cb)
-
-        except Exception as e:
-            # Catch all exceptions in the scanning code and log them
-            split_line = body.strip().split(":")
-            filepath = split_line[3]
-            logger.error(f'Error occurred while scanning: {filepath}', exc_info=e)
-            raise
 
 def main():
     # Command line arguments to get rabbit config file.

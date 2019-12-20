@@ -54,14 +54,12 @@ class FBSUpdateHandler(UpdateHandler):
             }
         )
 
-    def process_event(self, body):
+    def process_event(self, message):
         """
 
         :param path: The file path to process
         :param action: The action to perform on the filepath
         """
-
-        message = self._decode_message(body)
 
         self.logger.info(f'{message.filepath}:{message.action}')
 
