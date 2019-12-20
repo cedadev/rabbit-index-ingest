@@ -16,6 +16,7 @@ from rabbit_indexer.index_updaters import DirectoryUpdateHandler
 import logging
 import functools
 from collections import namedtuple
+import json
 
 logger = logging.getLogger()
 

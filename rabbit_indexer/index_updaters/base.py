@@ -1,7 +1,6 @@
 
 from datetime import datetime
 import logging
-import json
 
 
 class UpdateHandler:
