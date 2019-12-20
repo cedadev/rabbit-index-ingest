@@ -59,7 +59,7 @@ class DirectoryUpdateHandler(UpdateHandler):
             self._process_deletions(message.filepath)
 
         elif message.action == 'SYMLINK':
-            self._process_symlinks(message.filepath)
+            self._process_symlinks(message)
 
         elif message.action == '00README':
             self._process_readmes(message.filepath)
