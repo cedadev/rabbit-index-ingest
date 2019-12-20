@@ -185,7 +185,7 @@ class QueueHandler:
         logger.debug(f'Requeueing message: {delivery_tag}')
 
         if channel.is_open:
-            channel.basic_nack(delivery_tag, requeue=True)
+            channel.basic_reject(delivery_tag)
 
     def callback(self, ch, method, properties, body, connection):
         """
