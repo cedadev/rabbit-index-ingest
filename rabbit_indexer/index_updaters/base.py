@@ -43,6 +43,13 @@ class UpdateHandler:
     @staticmethod
     def _wait_for_file(message):
 
+        if isinstance(message, str):
+            if not os.path.exists(message.filepath):
+                time.sleep(60)
+
+            return
+            
+
         timestamp = datetime.strptime(message.datetime,'%Y-%m-%d %H:%M:%S')
 
         t_delta = datetime.now() - timestamp
