@@ -2,6 +2,7 @@
 from datetime import datetime
 import logging
 import time
+import os
 
 
 class UpdateHandler:
@@ -48,7 +49,7 @@ class UpdateHandler:
                 time.sleep(60)
 
             return
-            
+
 
         timestamp = datetime.strptime(message.datetime,'%Y-%m-%d %H:%M:%S')
 
