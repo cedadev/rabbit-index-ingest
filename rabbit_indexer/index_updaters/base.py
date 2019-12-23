@@ -3,6 +3,7 @@ from datetime import datetime
 import logging
 import time
 import os
+from dateutil.parser import parse
 
 
 class UpdateHandler:
@@ -51,7 +52,7 @@ class UpdateHandler:
             return
 
 
-        timestamp = datetime.strptime(message.datetime,'%Y-%m-%d %H:%M:%S')
+        timestamp = parse(message.datetime)
 
         t_delta = datetime.now() - timestamp
 
