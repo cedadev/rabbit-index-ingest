@@ -14,11 +14,13 @@ import os
 
 class FastDirectoryUpdateHandler(DirectoryUpdateHandler):
 
-    def _process_creations(self, path):
+    def _process_creations(self, message):
         """
         Process the creation of a new directory
         :param path: directory path
         """
+
+        path = message.filepath
 
         # Get the metadata
         metadata, _ = self.pt.generate_path_metadata(path)
