@@ -33,11 +33,8 @@ class FBSUpdateHandler(UpdateHandler):
 
         super().__init__(path_tools, conf, refresh_interval)
 
-        # Read in the config file
-        base = os.path.dirname(__file__)
-
         self.calculate_md5 = conf.getboolean('files-index', 'calculate-md5')
-        self.handler_factory = HandlerPicker(cfg_read(os.path.join(base, '../conf/index_updater.ini')))
+        self.handler_factory = self.load_handlers()
         self.level = conf.get('files-index', 'scan-level')
 
         # Initialise the Elasticsearch connection
@@ -53,6 +50,17 @@ class FBSUpdateHandler(UpdateHandler):
                 'timeout': 60
             }
         )
+
+    @staticmethod
+    def load_handlers():
+        """
+        Load the handlers.
+        Can be overridden to remove this step from the fast queue handler.
+        :return: HandlerPicker
+        """
+
+        base = os.path.dirname(__file__)
+        return HandlerPicker(cfg_read(os.path.join(base, '../conf/index_updater.ini')))
 
     def process_event(self, message):
         """

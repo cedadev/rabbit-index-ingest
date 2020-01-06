@@ -19,6 +19,14 @@ class FastFBSUpdateHandler(FBSUpdateHandler):
     be available.
     """
 
+    @staticmethod
+    def load_handlers():
+        """
+        return None as not used. Reduces the load time and dependencies for the
+        fast queue
+        """
+        return
+
     def process_event(self, message):
         """
         Only use information which you can get from the message.
