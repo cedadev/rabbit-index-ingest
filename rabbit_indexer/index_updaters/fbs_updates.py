@@ -9,7 +9,6 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 from ceda_elasticsearch_tools.index_tools import CedaFbi
-from fbs.proc.file_handlers.handler_picker import HandlerPicker
 from fbs.proc.common_util.util import cfg_read
 import os
 from rabbit_indexer.index_updaters.base import UpdateHandler
@@ -58,6 +57,7 @@ class FBSUpdateHandler(UpdateHandler):
         Can be overridden to remove this step from the fast queue handler.
         :return: HandlerPicker
         """
+        from fbs.proc.file_handlers.handler_picker import HandlerPicker
 
         base = os.path.dirname(__file__)
         return HandlerPicker(cfg_read(os.path.join(base, '../conf/index_updater.ini')))
