@@ -52,7 +52,16 @@ class SlowQueueConsumer(QueueHandler):
         :param connection: Pika connection
         """
 
-        message = self.decode_message(body)
+        try:
+            message = self.decode_message(body)
+
+        except IndexError:
+            # Acknowledge message
+            cb = functools.partial(self._acknowledge_message, ch, method.delivery_tag)
+            connection.add_callback_threadsafe(cb)
+
+            return
+
         body = body.decode('utf-8')
 
         try:

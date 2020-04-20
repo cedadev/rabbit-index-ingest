@@ -3,7 +3,7 @@
 
 """
 __author__ = 'Richard Smith'
-__date__ = '23 Aug 2019'
+__date__ = '06 Jan 2020'
 __copyright__ = 'Copyright 2018 United Kingdom Research and Innovation'
 __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
@@ -19,11 +19,11 @@ from rabbit_indexer.index_updaters import FastDirectoryUpdateHandler
 
 logger = logging.getLogger()
 
-class FastQueueConsumer(QueueHandler):
+
+class NonEssentialQueueConsumer(QueueHandler):
 
     def _get_handlers(self):
-        self.directory_handler = FastDirectoryUpdateHandler(path_tools=self.path_tools, conf=self._conf)
-        self.fbs_handler = FastFBSUpdateHandler(path_tools=self.path_tools, conf=self._conf)
+        return
 
     def callback(self, ch, method, properties, body, connection):
         """
@@ -37,35 +37,24 @@ class FastQueueConsumer(QueueHandler):
         :param connection: Pika connection
         """
 
-        try:
+        message = self.decode_message(body)
 
-            message = self.decode_message(body)
+        if message.action in ['DEPOSIT','MKDIR','RMDIR','SYMLINK']:
+            self.reraise(ch, message)
 
-        except IndexError:
-            # Acknowledge message
-            cb = functools.partial(self._acknowledge_message, ch, method.delivery_tag)
-            connection.add_callback_threadsafe(cb)
-            return
+        # Acknowledge message
+        cb = functools.partial(self._acknowledge_message, ch, method.delivery_tag)
+        connection.add_callback_threadsafe(cb)
 
-        try:
+    def reraise(self, channel, message):
 
-            if message.action in ['DEPOSIT', 'REMOVE']:
-                self.fbs_handler.process_event(message)
+        msg = '{datetime}:{filepath}:{action}:{filesize}:{message}'.format(**message._asdict())
 
-            elif message.action in ['MKDIR', 'RMDIR', 'SYMLINK']:
-                self.directory_handler.process_event(message)
-
-            # Acknowledge message
-            cb = functools.partial(self._acknowledge_message, ch, method.delivery_tag)
-            connection.add_callback_threadsafe(cb)
-
-        except Exception as e:
-            split_line = body.strip().split(":")
-            filepath = split_line[3]
-
-            # Catch all exceptions in the scanning code and log them
-            logger.error(f'Error occurred while scanning: {filepath}', exc_info=e)
-            raise
+        channel.basic_publish(
+            exchange=self.fbi_exchange,
+            routing_key='',
+            body=msg
+        )
 
 def main():
     # Command line arguments to get rabbit config file.
@@ -95,7 +84,7 @@ def main():
 
     logger.addHandler(ch)
 
-    queue_handler = FastQueueConsumer(conf)
+    queue_handler = NonEssentialQueueConsumer(conf)
     queue_handler.run()
 
 
