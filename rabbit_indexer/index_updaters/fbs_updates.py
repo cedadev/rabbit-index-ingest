@@ -40,11 +40,9 @@ class FBSUpdateHandler(UpdateHandler):
 
         self.index_updater = CedaFbi(
             index=conf.get('files-index', 'es-index'),
-            host_url=conf.get('elasticsearch', 'es-host'),
-            **{'http_auth': (
-                conf.get('elasticsearch', 'es-user'),
-                conf.get('elasticsearch', 'es-password')
-            ),
+            **{'headers': {
+                'x-api-key': conf.get('elasticsearch', 'es-api-key')
+            },
                 'retry_on_timeout': True,
                 'timeout': 60
             }

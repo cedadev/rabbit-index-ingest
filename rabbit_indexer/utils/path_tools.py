@@ -14,9 +14,10 @@ from json.decoder import JSONDecodeError
 import hashlib
 from requests.exceptions import Timeout
 
+
 class PathTools:
 
-    def __init__(self, moles_mapping_url='https://api.catalogue.ceda.ac.uk/api/v0/obs/all'):
+    def __init__(self, moles_mapping_url='http://api.catalogue.ceda.ac.uk/api/v0/obs/all'):
 
         self.moles_mapping_url = moles_mapping_url
 

@@ -1,0 +1,25 @@
+[server]
+name = ********
+user = ********
+password = *******
+vhost = ******
+log_exchange = deposit_logs
+fbi_exchange = fbi_fanout
+queue = *******_slow
+
+[logging]
+log-level = info
+
+[moles]
+moles_url = http://api.catalogue.ceda.ac.uk
+
+[elasticsearch]
+es-api-key = ****
+
+[directory-index]
+es-index = ceda-dirs
+
+[files-index]
+es-index = ceda-fbi
+scan-level = 2
+calculate-md5 = True
