@@ -12,7 +12,6 @@ from ceda_elasticsearch_tools.index_tools import CedaFbi
 from fbs.proc.common_util.util import cfg_read
 import os
 from rabbit_indexer.index_updaters.base import UpdateHandler
-from rabbit_indexer.utils.decorators import wait_for_file
 from elasticsearch.helpers import BulkIndexError
 
 

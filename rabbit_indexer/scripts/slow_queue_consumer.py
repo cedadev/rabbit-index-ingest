@@ -13,32 +13,11 @@ import configparser
 import argparse
 import logging
 import os
-import functools
-from multiprocessing import Process
 
 logger = logging.getLogger()
 
-def timeout_method(func, args, timeout=60):
-    """
-    Start a new process with a timeout to handle problem files
-    :param func: function to run
-    :param args: function arguments
-    :param timeout: seconds
-    """
-
-    # Create process
-    action_process = Process(target=func, args=args)
-
-    # Start process and wait for timeout
-    action_process.start()
-    action_process.join(timeout=timeout)
-
-    # Terminate process
-    action_process.terminate()
-
 
 class SlowQueueConsumer(QueueHandler):
-
 
     def callback(self, ch, method, properties, body, connection):
         """
@@ -56,33 +35,25 @@ class SlowQueueConsumer(QueueHandler):
             message = self.decode_message(body)
 
         except IndexError:
-            # Acknowledge message
-            cb = functools.partial(self._acknowledge_message, ch, method.delivery_tag)
-            connection.add_callback_threadsafe(cb)
-
-            return
-
-        body = body.decode('utf-8')
+            # Acknowledge message if the message is not compliant
+            self.acknowledge_message(ch, method.delivery_tag, connection)
 
         try:
             if message.action in ['DEPOSIT', 'REMOVE']:
                 self.fbs_handler.process_event(message)
 
-                if self.readme00.match(body):
+                if message.filepath.endswith('00README'):
                     self.directory_handler.process_event(message)
 
             elif message.action in ['MKDIR', 'RMDIR', 'SYMLINK']:
                 self.directory_handler.process_event(message)
 
             # Acknowledge message
-            cb = functools.partial(self._acknowledge_message, ch, method.delivery_tag)
-            connection.add_callback_threadsafe(cb)
+            self.acknowledge_message(ch, method.delivery_tag, connection)
 
         except Exception as e:
             # Catch all exceptions in the scanning code and log them
-            split_line = body.strip().split(":")
-            filepath = split_line[3]
-            logger.error(f'Error occurred while scanning: {filepath}', exc_info=e)
+            logger.error(f'Error occurred while scanning: {message.filepath}', exc_info=e)
             raise
 
 
