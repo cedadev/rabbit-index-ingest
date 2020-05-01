@@ -12,3 +12,4 @@ from .directory_updates import DirectoryUpdateHandler
 from .fbs_updates import FBSUpdateHandler
 from .fast_fbs_updates import FastFBSUpdateHandler
 from .fast_directory_updates import FastDirectoryUpdateHandler
+from .facet_scanner_updates import FacetScannerUpdateHandler

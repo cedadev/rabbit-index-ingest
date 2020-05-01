@@ -138,8 +138,8 @@ class PathTools:
 
         return successful
 
-    @staticmethod
-    def generate_id(path):
+    @classmethod
+    def generate_id(cls, path):
         """
         Take a path, encode to utf-8 (ignoring non-utf8 chars) and return hash
         :param path:
