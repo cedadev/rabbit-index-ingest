@@ -12,7 +12,7 @@ from .base import UpdateHandler
 import logging
 from facet_scanner.core.facet_scanner import FacetScanner
 from ceda_elasticsearch_tools.elasticsearch import CEDAElasticsearchClient
-from facet_scanner.utils import PathTools
+from rabbit_indexer.utils import PathTools
 
 
 class FacetScannerUpdateHandler(UpdateHandler):
