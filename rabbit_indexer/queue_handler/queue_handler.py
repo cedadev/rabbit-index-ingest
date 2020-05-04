@@ -176,8 +176,6 @@ class QueueHandler:
         cb = functools.partial(self._acknowledge_message, channel, delivery_tag)
         connection.add_callback_threadsafe(cb)
 
-        return
-
     def callback(self, ch, method, properties, body, connection):
         """
         Callback to run during basic consume routine.

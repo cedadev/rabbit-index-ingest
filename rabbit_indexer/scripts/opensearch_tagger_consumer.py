@@ -38,10 +38,12 @@ class OpensearchQueueConsumer(OpensearchQueueHandler):
         except IndexError:
             # Acknowledge message if the message is not compliant
             self.acknowledge_message(ch, method.delivery_tag, connection)
+            return
 
         # Filter by path for specific project
         if not message.filepath.startswith('/neodc/esacci'):
             self.acknowledge_message(ch, method.delivery_tag, connection)
+            return
 
         # Try to extract the facet tags
         try:

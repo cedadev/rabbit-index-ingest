@@ -37,6 +37,7 @@ class SlowQueueConsumer(QueueHandler):
         except IndexError:
             # Acknowledge message if the message is not compliant
             self.acknowledge_message(ch, method.delivery_tag, connection)
+            return
 
         try:
             if message.action in ['DEPOSIT', 'REMOVE']:
