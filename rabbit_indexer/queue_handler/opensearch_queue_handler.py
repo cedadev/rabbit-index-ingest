@@ -48,9 +48,8 @@ class OpensearchQueueHandler(QueueHandler):
         # Bind opensearch exchange to log exchange
         channel.exchange_bind(destination=self.opensearch_exchange, source=self.log_exchange)
 
-        # Declare queue and bind queue to the fbi exchange
-        channel.queue_declare(queue=self.queue_name, auto_delete=False)
-        channel.queue_bind(exchange=self.opensearch_exchange, queue=self.queue_name)
+        # Bind to the relevant queues
+        self.queue_bind(channel)
 
         # Set callback
         callback = functools.partial(self.callback, connection=connection)
@@ -71,3 +70,9 @@ class OpensearchQueueHandler(QueueHandler):
         """
 
         raise NotImplementedError
+
+    def queue_bind(self, channel):
+
+        # Declare queue and bind queue to the fbi exchange
+        channel.queue_declare(queue=self.queue_name, auto_delete=False)
+        channel.queue_bind(exchange=self.opensearch_exchange, queue=self.queue_name, routing_key='#')
