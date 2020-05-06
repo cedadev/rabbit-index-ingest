@@ -9,7 +9,7 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 from rabbit_indexer.queue_handler.opensearch_queue_handler import OpensearchQueueHandler
-from rabbit_indexer.index_updaters import FBSUpdateHandler
+from rabbit_indexer.index_updaters.fbs_updates import FBSUpdateHandler
 from rabbit_indexer.utils.consumer_setup import consumer_setup
 import logging
 

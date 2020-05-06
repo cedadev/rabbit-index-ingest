@@ -13,11 +13,21 @@ import configparser
 import argparse
 import logging
 import os
+from rabbit_indexer.index_updaters.fbs_updates import FBSUpdateHandler
+from rabbit_indexer.index_updaters.directory_updates import DirectoryUpdateHandler
 
 logger = logging.getLogger()
 
 
 class SlowQueueConsumer(QueueHandler):
+
+    def _get_handlers(self):
+        """
+        Get the stream handlers. Method to allow subclasses to modify which handlers to load.
+        """
+
+        self.directory_handler = DirectoryUpdateHandler(path_tools=self.path_tools, conf=self._conf)
+        self.fbs_handler = FBSUpdateHandler(path_tools=self.path_tools, conf=self._conf)
 
     def callback(self, ch, method, properties, body, connection):
         """

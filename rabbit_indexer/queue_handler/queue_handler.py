@@ -10,8 +10,6 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 import pika
 from rabbit_indexer.utils import PathTools
-from rabbit_indexer.index_updaters import FBSUpdateHandler
-from rabbit_indexer.index_updaters import DirectoryUpdateHandler
 import logging
 import functools
 from collections import namedtuple
@@ -77,7 +75,6 @@ class QueueHandler:
 
         return IngestMessage(**msg)
 
-
     def __init__(self, conf):
 
         # Get the username and password for rabbit
@@ -108,11 +105,11 @@ class QueueHandler:
 
     def _get_handlers(self):
         """
-        Get the stream handlers. Method to allow subclasses to modify which handlers to load.
+        Get the stream handlers.
         """
 
-        self.directory_handler = DirectoryUpdateHandler(path_tools=self.path_tools, conf=self._conf)
-        self.fbs_handler = FBSUpdateHandler(path_tools=self.path_tools, conf=self._conf)
+        raise NotImplementedError
+
 
     def _connect(self):
         """

@@ -14,8 +14,8 @@ import argparse
 import logging
 import os
 import functools
-from rabbit_indexer.index_updaters import FastFBSUpdateHandler
-from rabbit_indexer.index_updaters import FastDirectoryUpdateHandler
+from rabbit_indexer.index_updaters.fast_fbs_updates import FastFBSUpdateHandler
+from rabbit_indexer.index_updaters.fast_directory_updates import FastDirectoryUpdateHandler
 
 logger = logging.getLogger()
 
