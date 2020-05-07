@@ -1,0 +1,10 @@
+stages:
+  - deploy
+
+deploy:
+  stage: deploy
+  variables:
+    BUILD_ARG_GIT_VERSION: $CI_COMMIT_SHA
+  trigger: rsmith013/rabbit_indexer_docker
+  only:
+    - master
