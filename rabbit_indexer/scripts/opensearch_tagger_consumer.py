@@ -24,7 +24,7 @@ class OpensearchQueueConsumer(OpensearchQueueHandler):
 
         # Declare queue and bind queue to the fbi exchange
         channel.queue_declare(queue=self.queue_name, auto_delete=False)
-        channel.queue_bind(exchange=self.opensearch_exchange, queue=self.queue_name, routing_key='#')
+        channel.queue_bind(exchange=self.opensearch_exchange, queue=self.queue_name, routing_key='')
         channel.queue_bind(exchange=self.opensearch_exchange, queue=self.queue_name, routing_key='opensearch.tagger.cci')
 
     def callback(self, ch, method, properties, body, connection):
