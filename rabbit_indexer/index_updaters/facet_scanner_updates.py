@@ -60,7 +60,7 @@ class FacetScannerUpdateHandler(UpdateHandler):
 
         # Build the project dictionary using the handlers project name attr
         project = {
-            handler.project_name: facets
+            f'projects.{handler.project_name}': facets
         }
 
         # Send facets to elasticsearch
