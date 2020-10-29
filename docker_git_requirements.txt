@@ -1,0 +1,6 @@
+git+https://github.com/cedadev/ceda-elasticsearch-tools.git@v2.3.0
+git+https://github.com/cedadev/facet-scanner.git
+git+https://github.com/cedadev/directory-tree.git
+git+https://github.com/rsmith013/cci-tagger.git
+git+https://github.com/cedadev/ceda-fbs
+git+https://github.com/cedadev/nappy.git
