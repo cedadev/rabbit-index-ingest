@@ -74,7 +74,10 @@ setup(
     zip_safe=False,
     entry_points={
         'console_scripts': [
-            'rabbit_event_indexer = rabbit_indexer.scripts.queue_consumer:main',
+            'fast_queue_consumer = rabbit_indexer.scripts.fast_queue_consumer:main',
+            'slow_queue_consumer = rabbit_indexer.scripts.slow_queue_consumer:main',
+            'opensearch_tagger_consumer = rabbit_indexer.scripts.opensearch_tagger_consumer:main',
+            'opensearch_queue_consumer = rabbit_indexer.scripts.opensearch_queue_consumer:main',
         ],
     }
 )
