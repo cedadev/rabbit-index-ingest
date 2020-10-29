@@ -82,7 +82,7 @@ class QueueHandler:
         rabbit_password = conf.get('server', 'password')
 
         # Get moles api url
-        moles_url = f'{conf.get("moles", "moles_url")}/api/v0/obs/all'
+        moles_obs_map_url = conf.get("moles", "moles_obs_map_url")
 
         # Get the server variables
         self.rabbit_server = conf.get('server', 'name')
@@ -95,7 +95,7 @@ class QueueHandler:
         self.log_exchange = conf.get('server', 'log_exchange')
         self.fbi_exchange = conf.get('server', 'fbi_exchange')
         self.queue_name = conf.get('server', 'queue')
-        self.path_tools = PathTools(moles_mapping_url=moles_url)
+        self.path_tools = PathTools(moles_mapping_url=moles_obs_map_url)
         self.processing_stop = False
 
         self._conf = conf
