@@ -15,6 +15,7 @@ import logging
 import os
 from rabbit_indexer.index_updaters.fbs_updates import FBSUpdateHandler
 from rabbit_indexer.index_updaters.directory_updates import DirectoryUpdateHandler
+from rabbit_indexer.utils.consumer_setup import consumer_setup
 
 logger = logging.getLogger()
 
@@ -69,35 +70,7 @@ class SlowQueueConsumer(QueueHandler):
 
 
 def main():
-    # Command line arguments to get rabbit config file.
-    parser = argparse.ArgumentParser(description='Begin the rabbit based deposit indexer')
-
-    # Get default path for config
-    base = os.path.dirname(__file__)
-    default_config = os.path.join(base, '../conf/index_updater_slow.ini')
-
-    parser.add_argument('--config', dest='config', help='Path to config file for rabbit connection', default=default_config)
-
-    args = parser.parse_args()
-
-    CONFIG_FILE = args.config
-    conf = configparser.RawConfigParser()
-    conf.read(CONFIG_FILE)
-
-    # Setup logging
-    logging_level = conf.get('logging', 'log-level')
-    logger.setLevel(getattr(logging, logging_level.upper()))
-
-    # Add formatting
-    ch = logging.StreamHandler()
-    ch.setLevel(getattr(logging, logging_level.upper()))
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-
-    logger.addHandler(ch)
-
-    queue_handler = SlowQueueConsumer(conf)
-    queue_handler.run()
+    consumer_setup(SlowQueueConsumer, logger)
 
 
 if __name__ == '__main__':
