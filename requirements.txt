@@ -18,8 +18,8 @@ SPARQLWrapper==1.8.5
 tqdm==4.46.0
 urllib3==1.25.9
 verboselogs==1.7
-git+https://github.com/cedadev/ceda-elasticsearch-tools.git@cluster_migration
-git+https://github.com/cedadev/facet-scanner.git@issue/2/rabbit_facets
+git+https://github.com/cedadev/ceda-elasticsearch-tools.git@v2.3.0
+git+https://github.com/cedadev/facet-scanner.git
 git+https://github.com/cedadev/directory-tree.git
 git+https://github.com/cedadev/cci_tagger_json.git
 git+https://github.com/rsmith013/cci-tagger.git
