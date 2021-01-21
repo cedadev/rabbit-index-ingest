@@ -3,5 +3,7 @@ venv
 *.pyc
 *.egg-info
 __pycache__
+*.ini
 data
 *.ini
+tagger-env

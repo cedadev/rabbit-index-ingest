@@ -9,10 +9,7 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 from ceda_elasticsearch_tools.index_tools import CedaFbi
-from fbs.proc.common_util.util import cfg_read
-import os
 from rabbit_indexer.index_updaters.base import UpdateHandler
-from rabbit_indexer.utils.decorators import wait_for_file
 from elasticsearch.helpers import BulkIndexError
 
 
@@ -40,11 +37,9 @@ class FBSUpdateHandler(UpdateHandler):
 
         self.index_updater = CedaFbi(
             index=conf.get('files-index', 'es-index'),
-            host_url=conf.get('elasticsearch', 'es-host'),
-            **{'http_auth': (
-                conf.get('elasticsearch', 'es-user'),
-                conf.get('elasticsearch', 'es-password')
-            ),
+            **{'headers': {
+                'x-api-key': conf.get('elasticsearch', 'es-api-key')
+            },
                 'retry_on_timeout': True,
                 'timeout': 60
             }
@@ -59,8 +54,7 @@ class FBSUpdateHandler(UpdateHandler):
         """
         from fbs.proc.file_handlers.handler_picker import HandlerPicker
 
-        base = os.path.dirname(__file__)
-        return HandlerPicker(cfg_read(os.path.join(base, '../conf/index_updater.ini')))
+        return HandlerPicker()
 
     def process_event(self, message):
         """

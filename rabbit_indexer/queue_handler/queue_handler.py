@@ -9,7 +9,6 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 import pika
-import re
 from rabbit_indexer.utils import PathTools
 from rabbit_indexer.index_updaters import FBSUpdateHandler
 from rabbit_indexer.index_updaters import DirectoryUpdateHandler
@@ -17,7 +16,6 @@ import logging
 import functools
 from collections import namedtuple
 import json
-from datetime import datetime
 
 logger = logging.getLogger()
 
@@ -32,9 +30,6 @@ class QueueHandler:
     """
     Organises the thread pool and callbacks for the Rabbit Messages
     """
-
-    # Regex patterns
-    readme00 = re.compile("^\d{4}[-](\d{2})[-]\d{2}.*00README:")
 
     @staticmethod
     def decode_message(body):
@@ -90,7 +85,7 @@ class QueueHandler:
         rabbit_password = conf.get('server', 'password')
 
         # Get moles api url
-        moles_url = f'{conf.get("moles", "moles_url")}/api/v0/obs/all'
+        moles_obs_map_url = conf.get("moles", "moles_obs_map_url")
 
         # Get the server variables
         self.rabbit_server = conf.get('server', 'name')
@@ -103,7 +98,7 @@ class QueueHandler:
         self.log_exchange = conf.get('server', 'log_exchange')
         self.fbi_exchange = conf.get('server', 'fbi_exchange')
         self.queue_name = conf.get('server', 'queue')
-        self.path_tools = PathTools(moles_mapping_url=moles_url)
+        self.path_tools = PathTools(moles_mapping_url=moles_obs_map_url)
         self.processing_stop = False
 
         self._conf = conf
@@ -169,6 +164,17 @@ class QueueHandler:
         logger.debug(f'Acknowledging message: {delivery_tag}')
         if channel.is_open:
             channel.basic_ack(delivery_tag)
+
+    def acknowledge_message(self, channel, delivery_tag, connection):
+        """
+        Acknowledge message and move onto the next. All of the required
+        params come from the message callback params.
+        :param channel: callback channel param
+        :param delivery_tag: from the callback method param. eg. method.delivery_tag
+        :param connection: connection object from the callback param
+        """
+        cb = functools.partial(self._acknowledge_message, channel, delivery_tag)
+        connection.add_callback_threadsafe(cb)
 
     def callback(self, ch, method, properties, body, connection):
         """

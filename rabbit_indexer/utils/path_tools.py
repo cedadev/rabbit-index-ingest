@@ -15,20 +15,69 @@ import hashlib
 from requests.exceptions import Timeout
 
 
+def process_observations(results):
+    """
+    Convert the result list into a mapping object
+    :param results: list of observation json objects
+    :return: object map
+    """
+
+    processed_map = {}
+    for result in results:
+
+        # Skip results where the publication state is working
+        if result.get('publicationState') == 'working':
+            continue
+
+        try:
+            processed_map[result['result_field']['dataPath']] = {
+                'title': result['title'],
+                'url': f'https://catalogue.ceda.ac.uk/uuid/{result["uuid"]}',
+                'record_type': 'Dataset'
+            }
+        except TypeError:
+            continue
+
+    return processed_map
+
+
+def generate_moles_mapping(api_url, mapping=None):
+    """
+    Use the MOLES v2 API to generate a mapping from dataset path to moles record
+    :param api_url: MOLES api URL
+    :param mapping: Used for recursive functionality
+    :return: Mapping dict
+    """
+
+    # Set the dictionary on first calling
+    if not mapping:
+        mapping = {}
+
+    # Get the api response
+    try:
+        response = requests.get(api_url).json()
+    except JSONDecodeError as e:
+        import sys
+        raise ConnectionError(f'Could not connect to {api_url} to get moles mapping') from e
+
+    # Turn response into mapping object
+    mapping.update(process_observations(response['results']))
+
+    if not response['next']:
+        return mapping
+    else:
+        return generate_moles_mapping(response['next'], mapping)
+
+
 class PathTools:
 
-    def __init__(self, moles_mapping_url='http://api.catalogue.ceda.ac.uk/api/v0/obs/all'):
+    def __init__(self, moles_mapping_url='http://api.catalogue.ceda.ac.uk/api/v2/observations.json/'):
 
         self.moles_mapping_url = moles_mapping_url
 
         self.spots = SpotMapping()
 
-        try:
-            self.moles_mapping = requests.get(moles_mapping_url).json()
-        except JSONDecodeError as e:
-            import sys
-            raise ConnectionError(f'Could not connect to {moles_mapping_url} to get moles mapping') from e
-
+        self.moles_mapping = generate_moles_mapping(self.moles_mapping_url)
 
     def generate_path_metadata(self, path):
         """
@@ -138,8 +187,8 @@ class PathTools:
 
         return successful
 
-    @staticmethod
-    def generate_id(path):
+    @classmethod
+    def generate_id(cls, path):
         """
         Take a path, encode to utf-8 (ignoring non-utf8 chars) and return hash
         :param path:
