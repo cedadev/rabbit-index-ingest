@@ -8,8 +8,11 @@ import os
 from dateutil.parser import parse
 
 # Typing imports
-from rabbit_indexer.utils import PathTools
-from configparser import RawConfigParser
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from rabbit_indexer.utils import PathTools
+    from configparser import RawConfigParser
+    from rabbit_indexer.queue_handler.queue_handler import IngestMessage
 
 
 class UpdateHandler:
@@ -18,7 +21,7 @@ class UpdateHandler:
     the CEDA files indices.
     """
 
-    def __init__(self, path_tools: PathTools, conf: RawConfigParser, refresh_interval: int = 30) -> None:
+    def __init__(self, path_tools: 'PathTools', conf: 'RawConfigParser', refresh_interval: int = 30) -> None:
         """
 
         :param path_tools: rabbit_indexer.utils.PathTools object
@@ -58,7 +61,7 @@ class UpdateHandler:
                 self.update_time = datetime.now()
 
     @staticmethod
-    def _wait_for_file(message):
+    def _wait_for_file(message: 'IngestMessage'):
         """
         There can be a time delay from the deposit message arriving at the server
         to the file being visible via the storage technology and indexing. This method updates
@@ -66,12 +69,6 @@ class UpdateHandler:
 
         :param message: A rabbit_indexer.queue_handler.IngestMessage
         """
-
-        if isinstance(message, str):
-            if not os.path.exists(message.filepath):
-                time.sleep(60)
-
-            return
 
         timestamp = parse(message.datetime)
 

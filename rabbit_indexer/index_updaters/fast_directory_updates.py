@@ -13,7 +13,9 @@ import os
 
 
 # Typing imports
-from rabbit_indexer.queue_handler.queue_handler import IngestMessage
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from rabbit_indexer.queue_handler.queue_handler import IngestMessage
 
 
 class FastDirectoryUpdateHandler(DirectoryUpdateHandler):
@@ -25,7 +27,7 @@ class FastDirectoryUpdateHandler(DirectoryUpdateHandler):
     This is to increase the speed at which directories are visible in the index
     """
 
-    def _process_creations(self, message: IngestMessage):
+    def _process_creations(self, message: 'IngestMessage'):
         """
         Process the creation of a new directory
 

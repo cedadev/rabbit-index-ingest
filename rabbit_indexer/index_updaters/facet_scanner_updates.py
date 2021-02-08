@@ -20,13 +20,15 @@ from ceda_elasticsearch_tools.elasticsearch import CEDAElasticsearchClient
 import logging
 
 # Typing imports
-from configparser import RawConfigParser
-from rabbit_indexer.queue_handler.queue_handler import IngestMessage
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from configparser import RawConfigParser
+    from rabbit_indexer.queue_handler.queue_handler import IngestMessage
 
 
 class FacetScannerUpdateHandler(UpdateHandler):
 
-    def __init__(self, conf: RawConfigParser):
+    def __init__(self, conf: 'RawConfigParser'):
         """
         :param conf: A read configparser object
         """
@@ -45,7 +47,7 @@ class FacetScannerUpdateHandler(UpdateHandler):
 
         self.es = CEDAElasticsearchClient(headers={'x-api-key': api_key})
 
-    def process_event(self, message: IngestMessage):
+    def process_event(self, message: 'IngestMessage'):
         """
         Scan the file for facets
         :param message:
@@ -59,7 +61,7 @@ class FacetScannerUpdateHandler(UpdateHandler):
         elif message.action == 'DEPOSIT':
             self._process_deposits(message)
 
-    def _process_deposits(self, message: IngestMessage):
+    def _process_deposits(self, message: 'IngestMessage'):
 
         # Wait to make sure that the file is accessible on the filesystem
         self._wait_for_file(message)

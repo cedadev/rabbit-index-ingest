@@ -12,8 +12,10 @@ from .fbs_updates import FBSUpdateHandler
 import os
 
 # Typing imports
-from rabbit_indexer.queue_handler.queue_handler import IngestMessage
+from typing import TYPE_CHECKING
 from typing import Dict, List
+if TYPE_CHECKING:
+    from rabbit_indexer.queue_handler.queue_handler import IngestMessage
 
 
 class FastFBSUpdateHandler(FBSUpdateHandler):
@@ -31,7 +33,7 @@ class FastFBSUpdateHandler(FBSUpdateHandler):
         """
         return
 
-    def process_event(self, message: IngestMessage) -> None:
+    def process_event(self, message: 'IngestMessage') -> None:
         """
         Only use information which you can get from the message.
         Does not touch the file system
@@ -45,7 +47,7 @@ class FastFBSUpdateHandler(FBSUpdateHandler):
         elif message.action == 'REMOVE':
             self._process_deletions(message.filepath)
 
-    def _process_deposits(self, message: IngestMessage) -> None:
+    def _process_deposits(self, message: 'IngestMessage') -> None:
         """
         Take the given file path and add it to the FBI index.
         This is the fast version which just uses information
@@ -65,7 +67,7 @@ class FastFBSUpdateHandler(FBSUpdateHandler):
         self.index_updater.add_files(indexing_list)
 
     @staticmethod
-    def _create_doc_from_message(message: IngestMessage) -> List[Dict]:
+    def _create_doc_from_message(message: 'IngestMessage') -> List[Dict]:
         """
         Creates the FBI document from the rabbit message.
         Does not touch the filesystem

@@ -19,9 +19,11 @@ from ceda_elasticsearch_tools.index_tools import CedaDirs
 import os
 
 # Typing imports
-from rabbit_indexer.queue_handler.queue_handler import IngestMessage
-from rabbit_indexer.utils import PathTools
-from configparser import RawConfigParser
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from configparser import RawConfigParser
+    from rabbit_indexer.utils import PathTools
+    from rabbit_indexer.queue_handler.queue_handler import IngestMessage
 
 
 class DirectoryUpdateHandler(UpdateHandler):
@@ -30,7 +32,7 @@ class DirectoryUpdateHandler(UpdateHandler):
     rabbit queue
     """
 
-    def __init__(self, path_tools: PathTools, conf: RawConfigParser, refresh_interval: int = 30) -> None:
+    def __init__(self, path_tools: 'PathTools', conf: 'RawConfigParser', refresh_interval: int = 30) -> None:
         """
 
         :param path_tools: An initialised rabbit_indexer.utils.PathTools object
@@ -50,7 +52,7 @@ class DirectoryUpdateHandler(UpdateHandler):
             }
         )
 
-    def process_event(self, message: IngestMessage):
+    def process_event(self, message: 'IngestMessage'):
         """
         Takes the events from rabbit and sends them to the appropriate processor
 
@@ -75,7 +77,7 @@ class DirectoryUpdateHandler(UpdateHandler):
         elif message.action == '00README':
             self._process_readmes(message.filepath)
 
-    def _process_creations(self, message: IngestMessage):
+    def _process_creations(self, message: 'IngestMessage'):
         """
         Process the creation of a new directory
 
@@ -114,7 +116,7 @@ class DirectoryUpdateHandler(UpdateHandler):
             ]
         )
 
-    def _process_symlinks(self, message: IngestMessage):
+    def _process_symlinks(self, message: 'IngestMessage'):
         """
         Method to make it explicit what action is being
         performed but the actual code to run is the same
