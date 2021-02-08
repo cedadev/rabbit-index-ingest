@@ -8,18 +8,33 @@ __copyright__ = 'Copyright 2018 United Kingdom Research and Innovation'
 __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
-from ceda_elasticsearch_tools.index_tools import CedaDirs
-import os
+# Local imports
 from rabbit_indexer.index_updaters.base import UpdateHandler
-from time import sleep
 from rabbit_indexer.utils.decorators import wait_for_file
 
-class DirectoryUpdateHandler(UpdateHandler):
+# Third-party imports
+from ceda_elasticsearch_tools.index_tools import CedaDirs
 
-    def __init__(self, path_tools, conf, refresh_interval=30):
+# Python imports
+import os
+
+# Typing imports
+from rabbit_indexer.queue_handler.queue_handler import IngestMessage
+from rabbit_indexer.utils import PathTools
+from configparser import RawConfigParser
+
+
+class DirectoryUpdateHandler(UpdateHandler):
+    """
+    Handler to update the ceda-dirs directory index based on messages in the
+    rabbit queue
+    """
+
+    def __init__(self, path_tools: PathTools, conf: RawConfigParser, refresh_interval: int = 30) -> None:
         """
 
-        :param path_tools: An initialised PathTools object
+        :param path_tools: An initialised rabbit_indexer.utils.PathTools object
+        :param conf: A read configparser.ConfigParser object
         :param refresh_interval: Time in minutes before refreshing the mappings
         """
         super().__init__(path_tools, conf, refresh_interval)
@@ -35,13 +50,11 @@ class DirectoryUpdateHandler(UpdateHandler):
             }
         )
 
-    def process_event(self, message):
+    def process_event(self, message: IngestMessage):
         """
         Takes the events from rabbit and sends them to the appropriate processor
 
-        :param action: Deposit Action. Can be one of: MKDIR|RMDIR|SYMLINK|00README
-        :param path: The directory or readme path to process
-
+        :param message: rabbitMQ message
         """
 
         self.logger.info(f'{message.filepath}:{message.action}')
@@ -62,7 +75,7 @@ class DirectoryUpdateHandler(UpdateHandler):
         elif message.action == '00README':
             self._process_readmes(message.filepath)
 
-    def _process_creations(self, message):
+    def _process_creations(self, message: IngestMessage):
         """
         Process the creation of a new directory
 
@@ -85,8 +98,7 @@ class DirectoryUpdateHandler(UpdateHandler):
                 ]
             )
 
-
-    def _process_deletions(self, path):
+    def _process_deletions(self, path: str):
         """
         Process the deletion of a directory
 
@@ -102,19 +114,19 @@ class DirectoryUpdateHandler(UpdateHandler):
             ]
         )
 
-    def _process_symlinks(self, path):
+    def _process_symlinks(self, message: IngestMessage):
         """
         Method to make it explicit what action is being
         performed but the actual code to run is the same
         as for creations.
 
-        :param path: filepath
+        :param message: parsed message from RabbitMQ
         """
 
-        self._process_creations(path)
+        self._process_creations(message)
 
     @wait_for_file
-    def _process_readmes(self, path):
+    def _process_readmes(self, path: str):
         """
         Process the addition of a 00README file
 

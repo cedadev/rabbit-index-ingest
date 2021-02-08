@@ -12,12 +12,24 @@ from .directory_updates import DirectoryUpdateHandler
 import os
 
 
-class FastDirectoryUpdateHandler(DirectoryUpdateHandler):
+# Typing imports
+from rabbit_indexer.queue_handler.queue_handler import IngestMessage
 
-    def _process_creations(self, message):
+
+class FastDirectoryUpdateHandler(DirectoryUpdateHandler):
+    """
+    Handler for directory updates which does not touch the filesystem.
+    This handler overwrites the creation methods to rely on the message
+    content rather than looking on disk.
+
+    This is to increase the speed at which directories are visible in the index
+    """
+
+    def _process_creations(self, message: IngestMessage):
         """
         Process the creation of a new directory
-        :param path: directory path
+
+        :param message: the parsed message object
         """
 
         path = message.filepath
@@ -47,9 +59,10 @@ class FastDirectoryUpdateHandler(DirectoryUpdateHandler):
             )
 
     @staticmethod
-    def _generate_doc_from_message(path):
+    def _generate_doc_from_message(path: str) -> dict:
         """
         Generate directory document from path without checking file system attributes
+
         :param path: filepath
         :return: document metadata
         """

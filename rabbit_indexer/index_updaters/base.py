@@ -1,14 +1,30 @@
 
+
+# Python Imports
 from datetime import datetime
 import logging
 import time
 import os
 from dateutil.parser import parse
 
+# Typing imports
+from rabbit_indexer.utils import PathTools
+from configparser import RawConfigParser
+
 
 class UpdateHandler:
+    """
+    Base class for file/directory based rabbitMQ messages which are used to update
+    the CEDA files indices.
+    """
 
-    def __init__(self, path_tools, conf, refresh_interval=30):
+    def __init__(self, path_tools: PathTools, conf: RawConfigParser, refresh_interval: int = 30) -> None:
+        """
+
+        :param path_tools: rabbit_indexer.utils.PathTools object
+        :param conf:
+        :param refresh_interval: Time interval to refresh the MOLES and Spot mapping in minutes
+        """
 
         # Initialise update counter
         self.update_time = datetime.now()
@@ -25,8 +41,7 @@ class UpdateHandler:
     def _update_mappings(self):
         """
         Need to make sure that the code is using the most up to date mapping, either in
-        MOLES or the spot mapping.
-        :return:
+        MOLES or the spot mapping. This method updates the mappings on disk.
         """
 
         timedelta = (datetime.now() - self.update_time).seconds
@@ -44,13 +59,19 @@ class UpdateHandler:
 
     @staticmethod
     def _wait_for_file(message):
+        """
+        There can be a time delay from the deposit message arriving at the server
+        to the file being visible via the storage technology and indexing. This method updates
+        puts a short wait in which will wait for the file to appear on disk.
+
+        :param message: A rabbit_indexer.queue_handler.IngestMessage
+        """
 
         if isinstance(message, str):
             if not os.path.exists(message.filepath):
                 time.sleep(60)
 
             return
-
 
         timestamp = parse(message.datetime)
 

@@ -13,14 +13,22 @@ import pika
 import functools
 
 
-class OpensearchQueueHandler(QueueHandler):
+# Typing imports
+from configparser import RawConfigParser
+from pika.channel import Channel
 
-    def __init__(self, conf):
+
+class OpensearchQueueHandler(QueueHandler):
+    """
+    Sets up connections to the opensearch queues and indices
+    """
+
+    def __init__(self, conf: RawConfigParser):
         super().__init__(conf)
 
         self.opensearch_exchange = conf.get('server', 'opensearch_exchange')
 
-    def _connect(self):
+    def _connect(self) -> Channel:
         """
         Start Pika connection to server. This is run in each thread.
 
