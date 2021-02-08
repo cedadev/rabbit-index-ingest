@@ -11,6 +11,7 @@ from ceda_elasticsearch_tools.core.log_reader import SpotMapping
 import os
 import requests
 from json.decoder import JSONDecodeError
+import json
 import hashlib
 from requests.exceptions import Timeout
 
@@ -71,13 +72,17 @@ def generate_moles_mapping(api_url, mapping=None):
 
 class PathTools:
 
-    def __init__(self, moles_mapping_url='http://api.catalogue.ceda.ac.uk/api/v2/observations.json/'):
+    def __init__(self, moles_mapping_url='http://api.catalogue.ceda.ac.uk/api/v2/observations.json/', mapping_file=None):
 
         self.moles_mapping_url = moles_mapping_url
 
         self.spots = SpotMapping()
 
-        self.moles_mapping = generate_moles_mapping(self.moles_mapping_url)
+        if mapping_file:
+            with open(mapping_file) as reader:
+                self.moles_mapping = json.load(reader)
+        else:
+            self.moles_mapping = generate_moles_mapping(self.moles_mapping_url)
 
     def generate_path_metadata(self, path):
         """

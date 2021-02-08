@@ -100,6 +100,9 @@ class DirectoryUpdateHandler(UpdateHandler):
                 ]
             )
 
+        # Check for readme files
+        self._process_readmes(message.filepath)
+
     def _process_deletions(self, path: str):
         """
         Process the deletion of a directory
