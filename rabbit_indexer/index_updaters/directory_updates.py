@@ -89,6 +89,12 @@ class DirectoryUpdateHandler(UpdateHandler):
         # Get the metadata
         metadata, _ = self.pt.generate_path_metadata(message.filepath)
 
+        # Check for readmes
+        content = self.pt.get_readme(message.filepath)
+
+        if content:
+            metadata['readme'] = content
+
         # Index new directory
         if metadata:
             self.index_updater.add_dirs(
@@ -99,9 +105,6 @@ class DirectoryUpdateHandler(UpdateHandler):
                     }
                 ]
             )
-
-        # Check for readme files
-        self._process_readmes(message.filepath)
 
     def _process_deletions(self, path: str):
         """
