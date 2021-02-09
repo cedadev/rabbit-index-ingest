@@ -15,6 +15,8 @@ import json
 import hashlib
 from requests.exceptions import Timeout
 
+from typing import Optional, Tuple
+
 
 def process_observations(results):
     """
@@ -45,6 +47,7 @@ def process_observations(results):
 def generate_moles_mapping(api_url, mapping=None):
     """
     Use the MOLES v2 API to generate a mapping from dataset path to moles record
+
     :param api_url: MOLES api URL
     :param mapping: Used for recursive functionality
     :return: Mapping dict
@@ -72,7 +75,7 @@ def generate_moles_mapping(api_url, mapping=None):
 
 class PathTools:
 
-    def __init__(self, moles_mapping_url='http://api.catalogue.ceda.ac.uk/api/v2/observations.json/', mapping_file=None):
+    def __init__(self, moles_mapping_url: str ='http://api.catalogue.ceda.ac.uk/api/v2/observations.json/', mapping_file: Optional[str] = None):
 
         self.moles_mapping_url = moles_mapping_url
 
@@ -84,7 +87,7 @@ class PathTools:
         else:
             self.moles_mapping = generate_moles_mapping(self.moles_mapping_url)
 
-    def generate_path_metadata(self, path):
+    def generate_path_metadata(self, path: str) -> Tuple[Optional[dict],Optional[bool]]:
         """
         Take path and process it to generate metadata as used in ceda directories index
         :param path:
@@ -124,7 +127,7 @@ class PathTools:
 
         return dir_meta, dir_meta['link']
 
-    def get_moles_record_metadata(self, path):
+    def get_moles_record_metadata(self, path: str) -> Optional[dict]:
         """
         Try and find metadata for a MOLES record associated with the path.
         :param path: Directory path
@@ -166,7 +169,7 @@ class PathTools:
             return response.json()
 
     @staticmethod
-    def get_readme(path):
+    def get_readme(path: str) -> str:
         """
         Search in directory for a README file and read the contents
         :param path: Directory path
@@ -178,7 +181,7 @@ class PathTools:
 
             return content.encode(errors='ignore').decode()
 
-    def update_mapping(self):
+    def update_mapping(self) -> bool:
 
         successful = True
         # Update the moles mapping
@@ -193,11 +196,12 @@ class PathTools:
         return successful
 
     @classmethod
-    def generate_id(cls, path):
+    def generate_id(cls, path: str) -> str:
         """
         Take a path, encode to utf-8 (ignoring non-utf8 chars) and return hash
-        :param path:
-        :return: hash
+
+        :param path: filepath to hash
+        :return: hash hexdigest of sha1 hash
         """
 
         return hashlib.sha1(path.encode(errors='ignore')).hexdigest()

@@ -32,7 +32,7 @@ class DirectoryUpdateHandler(UpdateHandler):
     rabbit queue
     """
 
-    def __init__(self, path_tools: 'PathTools', conf: 'RawConfigParser', refresh_interval: int = 30) -> None:
+    def __init__(self, path_tools: 'PathTools', conf: 'RawConfigParser', refresh_interval: int = 30):
         """
 
         :param path_tools: An initialised rabbit_indexer.utils.PathTools object
@@ -153,4 +153,3 @@ class DirectoryUpdateHandler(UpdateHandler):
                     }
                 ]
             )
-

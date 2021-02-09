@@ -40,7 +40,7 @@ dependencies:
   - libcblas=3.8.0
   - libcurl=7.64.1
   - libcxx=8.0.0
-  - libcxxabi=8.0.0
+#  - libcxxabi=8.0.0
   - libedit=3.1.20170329
   - libffi=3.2.1
   - libgfortran=3
@@ -111,8 +111,8 @@ dependencies:
   - zict=0.1.4
   - zlib=1.2.11
   - pip:
-    - git+https://github.com/cedadev/ceda-elasticsearch-tools@v1.2.0
-    - git+https://github.com/cedadev/ceda-fbs@pip_install
+    - git+https://github.com/cedadev/ceda-elasticsearch-tools
+    - git+https://github.com/cedadev/ceda-fbs
     - git+https://github.com/cedadev/nappy.git
     - docopt==0.6.2
     - elasticsearch==6.3.1
