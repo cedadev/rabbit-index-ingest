@@ -54,7 +54,7 @@ class SlowQueueConsumer(QueueHandler):
 
         except Exception as e:
             # Catch all exceptions in the scanning code and log them
-            logger.error(f'Error occurred while scanning: {message.filepath}', exc_info=e)
+            logger.error(f'Error occurred while scanning: {message}', exc_info=e)
             raise
 
 

@@ -20,14 +20,14 @@ from unittest.mock import patch
 def get_local_path():
     return os.path.dirname(os.path.relpath(__file__))
 
-
-MESSAGE = IngestMessage(**{
+MESSAGE_CONTENTS = {
     'datetime': '2021-02-09 11:17:12',
     'filepath': os.path.join(get_local_path(),'test_tree/badc/cmip5/data'),
     'action': 'MKDIR',
     'filesize': '',
     'message': ''
-})
+}
+
 CONFIG_FILE = os.path.join(get_local_path(),'../rabbit_indexer/conf/index_updater_slow.ini.tmpl')
 MAPPING_FILE = os.path.join(get_local_path(),'moles_mapping_file.json')
 
@@ -37,7 +37,6 @@ class DirectoryUpdateTestCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.MESSAGE = MESSAGE
         path_tools = PathTools(mapping_file=MAPPING_FILE)
 
         conf = RawConfigParser()
@@ -49,10 +48,20 @@ class DirectoryUpdateTestCase(unittest.TestCase):
 
         expected = [
             unittest.mock.call(['{"index": {"_index": "ceda-dirs", "_id": "26b4449a0268a4da357c0993bd0eb98e6946f508"}}\n{"depth": 4, "dir": "data", "path": "tests/test_tree/badc/cmip5/data", "archive_path": "tests/test_tree/badc/cmip5/data", "link": false, "type": "dir"}\n']),
-            unittest.mock.call(['{"update": {"_index": "ceda-dirs", "_id": "5036fbd8f8c96f185e42321aa506033e5fb7a609"}}\n{"doc": {"readme": "5th Coupled Model Intercomparison Project (CMIP5)\\n"}, "doc_as_upsert": true}\n']),
+            unittest.mock.call(['{"index": {"_index": "ceda-dirs", "_id": "5036fbd8f8c96f185e42321aa506033e5fb7a609"}}\n{"depth": 3, "dir": "cmip5", "path": "tests/test_tree/badc/cmip5", "archive_path": "tests/test_tree/badc/cmip5", "link": false, "type": "dir", "readme": "5th Coupled Model Intercomparison Project (CMIP5)\\n"}\n'])
         ]
 
-        self.handler._process_creations(self.MESSAGE)
+        message1 = IngestMessage(**MESSAGE_CONTENTS)
+        self.handler._process_creations(message1)
+
+        # Change the filepaht
+        message2_contents = {
+            **MESSAGE_CONTENTS,
+            'filepath': os.path.join(get_local_path(), 'test_tree/badc/cmip5')
+        }
+        message2 = IngestMessage(**message2_contents)
+
+        self.handler._process_creations(message2)
         self.assertEqual(mock_method.mock_calls, expected)
 
     def test__process_deletions(self, mock_method):
