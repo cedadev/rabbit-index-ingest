@@ -90,10 +90,11 @@ class DirectoryUpdateHandler(UpdateHandler):
         metadata, _ = self.pt.generate_path_metadata(message.filepath)
 
         # Check for readmes
-        content = self.pt.get_readme(message.filepath)
+        if os.path.isdir(message.filepath):
+            content = self.pt.get_readme(message.filepath)
 
-        if content:
-            metadata['readme'] = content
+            if content:
+                metadata['readme'] = content
 
         # Index new directory
         if metadata:
