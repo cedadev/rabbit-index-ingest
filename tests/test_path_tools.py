@@ -9,6 +9,7 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 from unittest import TestCase
+from unittest.mock import patch
 import unittest
 import os
 import json
@@ -20,7 +21,7 @@ def get_local_path():
     return os.path.dirname(os.path.relpath(__file__))
 
 
-class TestPathTools(TestCase):
+class PathToolsTestCase(TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -32,6 +33,7 @@ class TestPathTools(TestCase):
             mapping = json.load(reader)
             cls.moles_cmip5_metadata = list(mapping.values())[0]
 
+    @patch('os.path.isdir', lambda x: True)
     def test_generate_path_metadata(self):
 
         metadata, islink = self.path_tools.generate_path_metadata(
@@ -54,6 +56,11 @@ class TestPathTools(TestCase):
 
         self.assertFalse(islink)
 
+        # Check that we still return collections
+        with patch('os.path.islink', lambda x: False) as mock_link:
+            metadata, islink = self.path_tools.generate_path_metadata('/neodc/avhrr-3')
+            self.assertTrue(metadata.get('record_type'), 'Dataset Collection')
+
     def test_get_moles_record_metadata(self):
         metadata = self.path_tools.get_moles_record_metadata(
             'test_tree/badc/cmip5/data'
@@ -62,6 +69,22 @@ class TestPathTools(TestCase):
             metadata,
             self.moles_cmip5_metadata
         )
+
+    def test_get_moles_record_metadata_live(self):
+        """
+        Check against the live API
+
+        :return:
+        """
+
+        paths = [
+            '/neodc/avhrr-3',
+        ]
+
+        for path in paths:
+            metadata = self.path_tools.get_moles_record_metadata(path)
+            expected = self.path_tools._get_moles_record_metadata_data_from_api(path)
+            self.assertDictEqual(metadata, expected)
 
     def test_get_readme(self):
         """

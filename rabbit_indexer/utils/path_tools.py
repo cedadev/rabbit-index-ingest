@@ -75,7 +75,9 @@ def generate_moles_mapping(api_url, mapping=None):
 
 class PathTools:
 
-    def __init__(self, moles_mapping_url: str ='http://api.catalogue.ceda.ac.uk/api/v2/observations.json/', mapping_file: Optional[str] = None):
+    def __init__(self,
+                 moles_mapping_url: str ='http://api.catalogue.ceda.ac.uk/api/v2/observations.json/',
+                 mapping_file: Optional[str] = None):
 
         self.moles_mapping_url = moles_mapping_url
 
@@ -157,6 +159,9 @@ class PathTools:
 
         # No match has been found
         # Search MOLES API for path match
+        return self._get_moles_record_metadata_data_from_api(path)
+
+    def _get_moles_record_metadata_data_from_api(self, path: str) -> Optional[dict]:
         url = f'http://api.catalogue.ceda.ac.uk/api/v0/obs/get_info{path}'
         try:
             response = requests.get(url, timeout=10)
