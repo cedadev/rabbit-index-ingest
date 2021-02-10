@@ -15,14 +15,15 @@ from rabbit_indexer.index_updaters.directory_updates import DirectoryUpdateHandl
 from configparser import RawConfigParser
 import os
 from unittest.mock import patch
+from pyfakefs.fake_filesystem_unittest import TestCase
+
 
 
 def get_local_path():
     return os.path.dirname(os.path.relpath(__file__))
 
-MESSAGE_CONTENTS = {
+BASE_MESSAGE_CONTENTS = {
     'datetime': '2021-02-09 11:17:12',
-    'filepath': os.path.join(get_local_path(),'test_tree/badc/cmip5/data'),
     'action': 'MKDIR',
     'filesize': '',
     'message': ''
@@ -33,7 +34,7 @@ MAPPING_FILE = os.path.join(get_local_path(),'moles_mapping_file.json')
 
 
 @patch('ceda_elasticsearch_tools.index_tools.base.IndexUpdaterBase._bulk_action')
-class DirectoryUpdateTestCase(unittest.TestCase):
+class DirectoryUpdateTestCase(TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -44,24 +45,49 @@ class DirectoryUpdateTestCase(unittest.TestCase):
 
         cls.handler = DirectoryUpdateHandler(path_tools, conf)
 
+    def setUp(self):
+        """
+        Set up fake directory structure
+        :return:
+        """
+        self.setUpPyfakefs()
+
+        dirs = [
+            '/badc/cmip5/data',
+            '/neodc/avhrr-3'
+        ]
+        files = [
+            ('/neodc/avhrr-3/00README','test readme content'),
+            ('/badc/cmip5/00README','5th Coupled Model Intercomparison Project (CMIP5)\\n"}\n')
+        ]
+
+        for _dir in dirs:
+            self.fs.create_dir(_dir)
+
+        for _file, content in files:
+            self.fs.create_file(_file, contents=content)
+
     def test__process_creations(self, mock_method):
 
         expected = [
-            unittest.mock.call(['{"index": {"_index": "ceda-dirs", "_id": "26b4449a0268a4da357c0993bd0eb98e6946f508"}}\n{"depth": 4, "dir": "data", "path": "tests/test_tree/badc/cmip5/data", "archive_path": "tests/test_tree/badc/cmip5/data", "link": false, "type": "dir"}\n']),
-            unittest.mock.call(['{"index": {"_index": "ceda-dirs", "_id": "5036fbd8f8c96f185e42321aa506033e5fb7a609"}}\n{"depth": 3, "dir": "cmip5", "path": "tests/test_tree/badc/cmip5", "archive_path": "tests/test_tree/badc/cmip5", "link": false, "type": "dir", "readme": "5th Coupled Model Intercomparison Project (CMIP5)\\n"}\n'])
+            unittest.mock.call(['{"update": {"_index": "ceda-dirs", "_id": "0ca121763e49eb46bfc209c455cb85773ecfcfa7"}}\n{"doc": {"depth": 3, "dir": "data", "path": "/badc/cmip5/data", "archive_path": "/badc/cmip5/data", "link": false, "type": "dir", "title": "WCRP CMIP5: Geophysical Fluid Dynamics Laboratory (GFDL) GFDL-CM3 model output for the historicalGHG experiment", "url": "http://catalogue.ceda.ac.uk/uuid/2e46c98da23c4c8da7942b3c4f8bee08", "record_type": "Dataset"}, "doc_as_upsert": true}\n']),
+            unittest.mock.call(['{"update": {"_index": "ceda-dirs", "_id": "69bf498a75a2dfb32b17b424331428c549e6e9b5"}}\n{"doc": {"depth": 2, "dir": "cmip5", "path": "/badc/cmip5", "archive_path": "/badc/cmip5", "link": false, "type": "dir", "readme": "5th Coupled Model Intercomparison Project (CMIP5)\\\\n\\"}\\n"}, "doc_as_upsert": true}\n']),
+            unittest.mock.call(['{"update": {"_index": "ceda-dirs", "_id": "f57978b502a15586e51364d63d9a711b01b2d3b6"}}\n{"doc": {"depth": 2, "dir": "avhrr-3", "path": "/neodc/avhrr-3", "archive_path": "/neodc/avhrr-3", "link": false, "type": "dir", "title": "AVHRR-3: Radiometric images", "url": "http://catalogue.ceda.ac.uk/uuid/7767578df074e685932237a00ef319c5", "record_type": "Dataset Collection", "readme": "test readme content"}, "doc_as_upsert": true}\n'])
         ]
 
-        message1 = IngestMessage(**MESSAGE_CONTENTS)
-        self.handler._process_creations(message1)
+        paths = [
+            '/badc/cmip5/data',
+            '/badc/cmip5',
+            '/neodc/avhrr-3'
+        ]
 
-        # Change the filepaht
-        message2_contents = {
-            **MESSAGE_CONTENTS,
-            'filepath': os.path.join(get_local_path(), 'test_tree/badc/cmip5')
-        }
-        message2 = IngestMessage(**message2_contents)
+        for path in paths:
+            message = IngestMessage(**{
+                **BASE_MESSAGE_CONTENTS,
+                'filepath': path
+            })
+            self.handler._process_creations(message)
 
-        self.handler._process_creations(message2)
         self.assertEqual(mock_method.mock_calls, expected)
 
     def test__process_deletions(self, mock_method):

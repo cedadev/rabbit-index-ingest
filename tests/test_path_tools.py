@@ -8,8 +8,7 @@ __copyright__ = 'Copyright 2018 United Kingdom Research and Innovation'
 __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
-from unittest import TestCase
-from unittest.mock import patch
+from pyfakefs.fake_filesystem_unittest import TestCase
 import unittest
 import os
 import json
@@ -33,11 +32,29 @@ class PathToolsTestCase(TestCase):
             mapping = json.load(reader)
             cls.moles_cmip5_metadata = list(mapping.values())[0]
 
-    @patch('os.path.isdir', lambda x: True)
+    def setUp(self):
+        """
+        Set up fake directory structure
+        :return:
+        """
+        self.setUpPyfakefs()
+
+        dirs = [
+            '/badc/cmip5/data',
+            '/neodc/avhrr-3'
+        ]
+        files = [('/neodc/avhrr-3/00README','test readme content')]
+
+        for _dir in dirs:
+            self.fs.create_dir(_dir)
+
+        for _file, content in files:
+            self.fs.create_file(_file, contents=content)
+
     def test_generate_path_metadata(self):
 
         metadata, islink = self.path_tools.generate_path_metadata(
-            'test_tree/badc/cmip5/data'
+            '/badc/cmip5/data'
         )
 
         # Check have extracted the right metadata
@@ -46,20 +63,19 @@ class PathToolsTestCase(TestCase):
             {
                 'depth': 3,
                 'dir': 'data',
-                'path': 'test_tree/badc/cmip5/data',
-                'archive_path': 'test_tree/badc/cmip5/data',
+                'path': '/badc/cmip5/data',
+                'archive_path': '/badc/cmip5/data',
                 'link': False,
                 'type': 'dir',
                 **self.moles_cmip5_metadata
             }
         )
-
+        #
         self.assertFalse(islink)
 
         # Check that we still return collections
-        with patch('os.path.islink', lambda x: False) as mock_link:
-            metadata, islink = self.path_tools.generate_path_metadata('/neodc/avhrr-3')
-            self.assertTrue(metadata.get('record_type'), 'Dataset Collection')
+        metadata, islink = self.path_tools.generate_path_metadata('/neodc/avhrr-3')
+        self.assertTrue(metadata.get('record_type'), 'Dataset Collection')
 
     def test_get_moles_record_metadata(self):
         metadata = self.path_tools.get_moles_record_metadata(
