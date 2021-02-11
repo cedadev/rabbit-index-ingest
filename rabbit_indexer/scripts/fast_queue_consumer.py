@@ -19,6 +19,7 @@ from rabbit_indexer.index_updaters import FastDirectoryUpdateHandler
 
 logger = logging.getLogger()
 
+
 class FastQueueConsumer(QueueHandler):
 
     def _get_handlers(self):
@@ -60,12 +61,10 @@ class FastQueueConsumer(QueueHandler):
             connection.add_callback_threadsafe(cb)
 
         except Exception as e:
-            split_line = body.strip().split(":")
-            filepath = split_line[3]
-
             # Catch all exceptions in the scanning code and log them
-            logger.error(f'Error occurred while scanning: {filepath}', exc_info=e)
+            logger.error(f'Error occurred while scanning: {message}', exc_info=e)
             raise
+
 
 def main():
     # Command line arguments to get rabbit config file.

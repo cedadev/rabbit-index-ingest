@@ -17,6 +17,13 @@ import functools
 from collections import namedtuple
 import json
 
+# Typing imports
+from configparser import RawConfigParser
+from pika.channel import Channel
+from pika.connection import Connection
+from pika.frame import Method
+from pika.frame import Header
+
 logger = logging.getLogger()
 
 elastic_logger = logging.getLogger('elasticsearch')
@@ -32,7 +39,7 @@ class QueueHandler:
     """
 
     @staticmethod
-    def decode_message(body):
+    def decode_message(body: bytes) -> IngestMessage:
         """
         Takes the message and turns into a dictionary.
         String message format when split on :
@@ -45,7 +52,7 @@ class QueueHandler:
             message = ":".join(split_line[6:])
 
         :param body: Message body, either a json string or text
-        :return: dictionary of format
+        :return: IngestMessage
             {
                 'datetime': ':'.join(split_line[:3]),
                 'filepath': split_line[3],
@@ -77,8 +84,7 @@ class QueueHandler:
 
         return IngestMessage(**msg)
 
-
-    def __init__(self, conf):
+    def __init__(self, conf: RawConfigParser):
 
         # Get the username and password for rabbit
         rabbit_user = conf.get('server', 'user')
@@ -153,7 +159,7 @@ class QueueHandler:
         return channel
 
     @staticmethod
-    def _acknowledge_message(channel, delivery_tag):
+    def _acknowledge_message(channel: Channel, delivery_tag: str):
         """
         Acknowledge message
 
@@ -165,7 +171,7 @@ class QueueHandler:
         if channel.is_open:
             channel.basic_ack(delivery_tag)
 
-    def acknowledge_message(self, channel, delivery_tag, connection):
+    def acknowledge_message(self, channel: Channel, delivery_tag: str, connection: Connection):
         """
         Acknowledge message and move onto the next. All of the required
         params come from the message callback params.
@@ -176,7 +182,7 @@ class QueueHandler:
         cb = functools.partial(self._acknowledge_message, channel, delivery_tag)
         connection.add_callback_threadsafe(cb)
 
-    def callback(self, ch, method, properties, body, connection):
+    def callback(self, ch: Channel, method: Method, properties: Header, body: bytes, connection: Connection):
         """
         Callback to run during basic consume routine.
         Arguments provided by pika standard message callback method

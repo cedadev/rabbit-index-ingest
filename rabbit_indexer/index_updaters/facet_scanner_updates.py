@@ -8,16 +8,30 @@ __copyright__ = 'Copyright 2018 United Kingdom Research and Innovation'
 __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
+# Local imports
 from .base import UpdateHandler
-import logging
+from rabbit_indexer.utils import PathTools
+
+# Third-party
 from facet_scanner.core.facet_scanner import FacetScanner
 from ceda_elasticsearch_tools.elasticsearch import CEDAElasticsearchClient
-from rabbit_indexer.utils import PathTools
+
+# Python imports
+import logging
+
+# Typing imports
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from configparser import RawConfigParser
+    from rabbit_indexer.queue_handler.queue_handler import IngestMessage
 
 
 class FacetScannerUpdateHandler(UpdateHandler):
 
-    def __init__(self, conf):
+    def __init__(self, conf: 'RawConfigParser'):
+        """
+        :param conf: A read configparser object
+        """
 
         # Setup logging
         self.logger = logging.getLogger()
@@ -33,7 +47,7 @@ class FacetScannerUpdateHandler(UpdateHandler):
 
         self.es = CEDAElasticsearchClient(headers={'x-api-key': api_key})
 
-    def process_event(self, message):
+    def process_event(self, message: 'IngestMessage'):
         """
         Scan the file for facets
         :param message:
@@ -47,7 +61,7 @@ class FacetScannerUpdateHandler(UpdateHandler):
         elif message.action == 'DEPOSIT':
             self._process_deposits(message)
 
-    def _process_deposits(self, message):
+    def _process_deposits(self, message: 'IngestMessage'):
 
         # Wait to make sure that the file is accessible on the filesystem
         self._wait_for_file(message)

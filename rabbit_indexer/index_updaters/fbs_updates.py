@@ -11,6 +11,15 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 from ceda_elasticsearch_tools.index_tools import CedaFbi
 from rabbit_indexer.index_updaters.base import UpdateHandler
 from elasticsearch.helpers import BulkIndexError
+from fbs.proc.file_handlers.handler_picker import HandlerPicker
+
+# Typing imports
+from typing import TYPE_CHECKING
+from typing import Dict, Tuple
+if TYPE_CHECKING:
+    from rabbit_indexer.queue_handler.queue_handler import IngestMessage
+    from rabbit_indexer.utils import PathTools
+    from configparser import RawConfigParser
 
 
 class FBSUpdateHandler(UpdateHandler):
@@ -19,12 +28,13 @@ class FBSUpdateHandler(UpdateHandler):
     rabbitMQ.
     """
 
-    def __init__(self, path_tools, conf, refresh_interval=30):
+    def __init__(self, path_tools: 'PathTools', conf: 'RawConfigParser', refresh_interval: int = 30) -> None:
         """
         Initialise the FBS Update Handler
 
-        :param path_tools: PathTools Object
-        :param refresh_interval: Time in minutes to refresh mappings
+        :param path_tools: An initialised PathTools object
+        :param conf: A read configparser object
+        :param refresh_interval: Time in minutes before refreshing the mappings
         """
 
         super().__init__(path_tools, conf, refresh_interval)
@@ -46,21 +56,21 @@ class FBSUpdateHandler(UpdateHandler):
         )
 
     @staticmethod
-    def load_handlers():
+    def load_handlers() -> 'HandlerPicker':
         """
         Load the handlers.
         Can be overridden to remove this step from the fast queue handler.
+
         :return: HandlerPicker
         """
-        from fbs.proc.file_handlers.handler_picker import HandlerPicker
 
         return HandlerPicker()
 
-    def process_event(self, message):
+    def process_event(self, message: 'IngestMessage') -> None:
         """
+        Processing the message according to the action within the message
 
-        :param path: The file path to process
-        :param action: The action to perform on the filepath
+        :param message: The parsed rabbitMQ message
         """
 
         self.logger.info(f'{message.filepath}:{message.action}')
@@ -74,10 +84,11 @@ class FBSUpdateHandler(UpdateHandler):
         elif message.action == 'REMOVE':
             self._process_deletions(message.filepath)
 
-    def _process_deposits(self, message):
+    def _process_deposits(self, message: 'IngestMessage') -> None:
         """
         Take the given file path and add it to the FBI index
-        :param path: File path
+
+        :param message: The parsed rabbitMQ message
         """
 
         # Check if path exists and has had sufficient time to appear
@@ -105,7 +116,14 @@ class FBSUpdateHandler(UpdateHandler):
                 self.index_updater.add_files(indexing_list)
 
     @staticmethod
-    def _create_body(file_data):
+    def _create_body(file_data: Tuple[Dict]) -> Dict:
+        """
+        Create the fbi-index document body from the handler
+        response
+
+        :param file_data: extracted metadata from the FBI file handler
+        :return: FBI document body
+        """
 
         data_length = len(file_data)
 
@@ -120,9 +138,10 @@ class FBSUpdateHandler(UpdateHandler):
 
         return doc
 
-    def _process_deletions(self, path):
+    def _process_deletions(self, path: str) -> None:
         """
         Take the given file path and delete it from the FBI index
+
         :param path: File path
         """
 
