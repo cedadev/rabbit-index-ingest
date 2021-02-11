@@ -14,7 +14,6 @@ dependencies:
   - cffi=1.12.3
   - cftime=1.0.3.4
   - chardet=3.0.4
-  - click=7.0
   - cloudpickle=1.0.0
   - cryptography=2.6.1
   - curl=7.64.1
@@ -115,6 +114,6 @@ dependencies:
     - git+https://github.com/cedadev/ceda-fbs
     - git+https://github.com/cedadev/nappy.git
     - docopt==0.6.2
-    - elasticsearch==6.3.1
+    - elasticsearch==7.9.1
     - urllib3==1.24.3
 
