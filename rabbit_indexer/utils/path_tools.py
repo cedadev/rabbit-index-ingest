@@ -181,7 +181,7 @@ class PathTools:
         :return: Readme contents
         """
         if '00README' in os.listdir(path):
-            with open(os.path.join(path, '00README')) as reader:
+            with open(os.path.join(path, '00README'), errors='replace') as reader:
                 content = reader.read()
 
             return content.encode(errors='ignore').decode()

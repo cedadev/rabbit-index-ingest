@@ -26,7 +26,6 @@ class PathToolsTestCase(TestCase):
     def setUpClass(cls) -> None:
         mapping_file = os.path.join(get_local_path(), 'moles_mapping_file.json')
         cls.path_tools = PathTools(mapping_file=mapping_file)
-        cls.directory_path = os.path.join(get_local_path(), 'test_tree/badc/cmip5')
 
         with open(mapping_file) as reader:
             mapping = json.load(reader)
@@ -43,13 +42,15 @@ class PathToolsTestCase(TestCase):
             '/badc/cmip5/data',
             '/neodc/avhrr-3'
         ]
-        files = [('/neodc/avhrr-3/00README','test readme content')]
+        files = [('/badc/cmip5/00README','5th Coupled Model Intercomparison Project (CMIP5)\n', 'utf-8'),
+                 ('/neodc/avhrr-3/00README', '(51.1445°N, 1.4370°W)', 'iso-8859-1'),
+                 ]
 
         for _dir in dirs:
             self.fs.create_dir(_dir)
 
-        for _file, content in files:
-            self.fs.create_file(_file, contents=content)
+        for _file, content, encoding in files:
+            self.fs.create_file(_file, contents=content, encoding=encoding)
 
     def test_generate_path_metadata(self):
 
@@ -79,7 +80,7 @@ class PathToolsTestCase(TestCase):
 
     def test_get_moles_record_metadata(self):
         metadata = self.path_tools.get_moles_record_metadata(
-            'test_tree/badc/cmip5/data'
+            '/badc/cmip5/data'
         )
         self.assertDictEqual(
             metadata,
@@ -106,8 +107,11 @@ class PathToolsTestCase(TestCase):
         """
         Check can extract readme from directory path
         """
-        readme = self.path_tools.get_readme(self.directory_path)
+        readme = self.path_tools.get_readme('/badc/cmip5')
         self.assertEqual(readme, '5th Coupled Model Intercomparison Project (CMIP5)\n')
+
+        readme = self.path_tools.get_readme('/neodc/avhrr-3')
+        self.assertEqual(readme, '(51.1445�N, 1.4370�W)')
 
     def test_generate_id(self):
         """

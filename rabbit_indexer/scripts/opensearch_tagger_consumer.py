@@ -68,3 +68,4 @@ class OpensearchQueueConsumer(OpensearchQueueHandler):
 
 if __name__ == '__main__':
     consumer_setup(OpensearchQueueConsumer, logger)
+    
