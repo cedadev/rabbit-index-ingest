@@ -23,7 +23,7 @@ with open("README.md") as readme_file:
 
 setup(
     name='rabbit_indexer',
-    version='2.2.1',
+    version='2.2.2',
     description='RabbitMQ consuming programme to process deposit server events and update the ES indices.',
     author='Richard Smith',
     author_email='richard.d.smith@stfc.ac.uk',
@@ -74,7 +74,10 @@ setup(
     zip_safe=False,
     entry_points={
         'console_scripts': [
-            'rabbit_event_indexer = rabbit_indexer.scripts.queue_consumer:main',
+            'rabbit_fbi_fast = rabbit_indexer.scripts.fast_queue_consumer:main',
+            'rabbit_fbi_slow = rabbit_indexer.scripts.slow_queue_consumer:main',
+            'rabbit_opensearch_index = rabbit_indexer.scripts.opensearch_queue_consumer:main',
+            'rabbit_opensearch_tags = rabbit_indexer.scripts.opensearch_tagger_consumer.py:main',
         ],
     }
 )
