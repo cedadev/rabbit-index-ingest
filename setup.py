@@ -77,7 +77,7 @@ setup(
             'rabbit_fbi_fast = rabbit_indexer.scripts.fast_queue_consumer:main',
             'rabbit_fbi_slow = rabbit_indexer.scripts.slow_queue_consumer:main',
             'rabbit_opensearch_index = rabbit_indexer.scripts.opensearch_queue_consumer:main',
-            'rabbit_opensearch_tags = rabbit_indexer.scripts.opensearch_tagger_consumer.py:main',
+            'rabbit_opensearch_tags = rabbit_indexer.scripts.opensearch_tagger_consumer:main',
         ],
     }
 )
