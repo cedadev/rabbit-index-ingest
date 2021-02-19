@@ -23,7 +23,7 @@ with open("README.md") as readme_file:
 
 setup(
     name='rabbit_indexer',
-    version='2.2.1',
+    version='3.0.0',
     description='RabbitMQ consuming programme to process deposit server events and update the ES indices.',
     author='Richard Smith',
     author_email='richard.d.smith@stfc.ac.uk',
@@ -38,8 +38,15 @@ setup(
         ],
     },
     install_requires=[
-        'requests'
+        'requests',
+        'pika',
+        'pyyaml'
     ],
+    extras_require={
+        'fbi':[],
+        'dbi':[],
+        'facets':[]
+    },
 
     # This qualifier can be used to selectively exclude Python versions -
     # in this case early Python 2 and 3 releases

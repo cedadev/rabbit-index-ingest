@@ -10,3 +10,4 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 
 from .path_tools import PathTools
+from .yaml_config import YamlConfig

@@ -43,7 +43,7 @@ class FacetScannerUpdateHandler(UpdateHandler):
 
         # Set up the Elasticsearch connection
         api_key = conf.get('elasticsearch', 'es-api-key')
-        self.index = conf.get('files-index', 'es-index')
+        self.index = conf.get('files_index', 'name')
 
         self.es = CEDAElasticsearchClient(headers={'x-api-key': api_key})
 

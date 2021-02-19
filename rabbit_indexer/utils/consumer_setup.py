@@ -9,8 +9,8 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 import argparse
-import configparser
 import logging
+from .yaml_config import YamlConfig
 
 
 def consumer_setup(consumer, logger):
@@ -22,7 +22,7 @@ def consumer_setup(consumer, logger):
     args = parser.parse_args()
 
     CONFIG_FILE = args.config
-    conf = configparser.RawConfigParser()
+    conf = YamlConfig()
     conf.read(CONFIG_FILE)
 
     # Setup logging

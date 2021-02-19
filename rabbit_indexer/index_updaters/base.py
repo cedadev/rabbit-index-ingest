@@ -6,6 +6,7 @@ import logging
 import time
 import os
 from dateutil.parser import parse
+from abc import ABC, abstractmethod
 
 # Typing imports
 from typing import TYPE_CHECKING
@@ -15,9 +16,9 @@ if TYPE_CHECKING:
     from rabbit_indexer.queue_handler.queue_handler import IngestMessage
 
 
-class UpdateHandler:
+class UpdateHandler(ABC):
     """
-    Base class for file/directory based rabbitMQ messages which are used to update
+    Abstract Base class for file/directory based rabbitMQ messages which are used to update
     the CEDA files indices.
     """
 
@@ -61,7 +62,7 @@ class UpdateHandler:
                 self.update_time = datetime.now()
 
     @staticmethod
-    def _wait_for_file(message: 'IngestMessage'):
+    def _wait_for_file(message: 'IngestMessage', wait_time: int = 300):
         """
         There can be a time delay from the deposit message arriving at the server
         to the file being visible via the storage technology and indexing. This method updates
@@ -74,7 +75,16 @@ class UpdateHandler:
 
         t_delta = datetime.now() - timestamp
 
-        if t_delta.seconds < 300:
+        if t_delta.seconds < wait_time:
 
             if not os.path.exists(message.filepath):
                 time.sleep(60)
+
+    @abstractmethod
+    def process_event(self, message: 'IngestMessage') -> None:
+        """
+        Processing the message according to the action within the message
+
+        :param message: The parsed rabbitMQ message
+        """
+        pass

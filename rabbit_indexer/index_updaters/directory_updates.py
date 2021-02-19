@@ -43,7 +43,7 @@ class DirectoryUpdateHandler(UpdateHandler):
 
         # Initialise the Elasticsearch connection
         self.index_updater = CedaDirs(
-            index=conf.get('directory-index', 'es-index'),
+            index=conf.get('directory_index', 'name'),
             **{'headers': {
                 'x-api-key': conf.get('elasticsearch', 'es-api-key')
             },

@@ -39,14 +39,14 @@ class FBSUpdateHandler(UpdateHandler):
 
         super().__init__(path_tools, conf, refresh_interval)
 
-        self.calculate_md5 = conf.getboolean('files-index', 'calculate-md5')
+        self.calculate_md5 = conf.getboolean('files_index', 'calculate-md5')
         self.handler_factory = self.load_handlers()
-        self.level = conf.get('files-index', 'scan-level')
+        self.level = conf.get('files_index', 'scan-level')
 
         # Initialise the Elasticsearch connection
 
         self.index_updater = CedaFbi(
-            index=conf.get('files-index', 'es-index'),
+            index=conf.get('files_index', 'name'),
             **{'headers': {
                 'x-api-key': conf.get('elasticsearch', 'es-api-key')
             },
