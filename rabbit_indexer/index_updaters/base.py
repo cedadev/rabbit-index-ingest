@@ -12,7 +12,7 @@ from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from rabbit_indexer.utils import PathTools
-    from configparser import RawConfigParser
+    from rabbit_indexer.utils.yaml_config import YamlConfig
     from rabbit_indexer.queue_handler.queue_handler import IngestMessage
 
 
@@ -22,12 +22,24 @@ class UpdateHandler(ABC):
     the CEDA files indices.
     """
 
-    def __init__(self, path_tools: 'PathTools', conf: 'RawConfigParser', refresh_interval: int = 30) -> None:
+    def __init__(self, conf: 'YamlConfig', **kwargs) -> None:
         """
 
-        :param path_tools: rabbit_indexer.utils.PathTools object
-        :param conf:
-        :param refresh_interval: Time interval to refresh the MOLES and Spot mapping in minutes
+        :param conf: Configuration file
+        """
+        self.conf = conf
+        self._setup_logging()
+        self.setup_extra(**kwargs)
+
+    def _setup_logging(self):
+
+        self.logger = logging.getLogger()
+        logging_level = self.conf.get('logging', 'log-level')
+        self.logger.setLevel(getattr(logging, logging_level.upper()))
+
+    def setup_extra(self, path_tools: 'PathTools', refresh_interval: int = 30, **kwargs):
+        """
+        Setup extra properties for the handler
         """
 
         # Initialise update counter
@@ -36,11 +48,6 @@ class UpdateHandler(ABC):
 
         # Initialise Path Tools
         self.pt = path_tools
-
-        # Setup logging
-        self.logger = logging.getLogger()
-        logging_level = conf.get('logging', 'log-level')
-        self.logger.setLevel(getattr(logging, logging_level.upper()))
 
     def _update_mappings(self):
         """

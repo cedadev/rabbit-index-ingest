@@ -94,6 +94,7 @@ class QueueHandler:
         """
 
         self.conf = conf
+        self.queue_handler = None
 
         # Init event handlers
         self.get_handlers()
@@ -150,9 +151,9 @@ class QueueHandler:
             channel.queue_declare(queue=queue['name'], **queue['kwargs'])
             channel.queue_bind(exchange=dest_exchange['name'], queue=queue['name'])
 
-        # Set callback
-        callback = functools.partial(self.callback, connection=connection)
-        channel.basic_consume(queue=queue['name'], on_message_callback=callback, auto_ack=False)
+            # Set callback
+            callback = functools.partial(self.callback, connection=connection)
+            channel.basic_consume(queue=queue['name'], on_message_callback=callback, auto_ack=False)
 
         return channel
 
