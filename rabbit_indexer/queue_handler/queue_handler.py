@@ -217,6 +217,7 @@ class QueueHandler:
             channel = self._connect()
 
             try:
+                logger.info('READY')
                 channel.start_consuming()
 
             except KeyboardInterrupt:

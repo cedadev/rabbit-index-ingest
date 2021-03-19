@@ -81,7 +81,7 @@ setup(
     zip_safe=False,
     entry_points={
         'console_scripts': [
-            'rabbit_event_indexer = rabbit_indexer.scripts.queue_consumer:main',
+            'rabbit_event_indexer = rabbit_indexer.scripts.run_queue_consumer:main',
         ],
     }
 )

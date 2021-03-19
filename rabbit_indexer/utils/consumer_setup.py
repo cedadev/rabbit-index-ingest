@@ -11,11 +11,14 @@ __contact__ = 'richard.d.smith@stfc.ac.uk'
 import argparse
 import logging
 from .yaml_config import YamlConfig
+from pydoc import locate
+
+logger = logging.getLogger(__name__)
 
 
-def consumer_setup(consumer, logger):
+def consumer_setup(consumer=None, description='Begin the rabbit based deposit indexer'):
     # Command line arguments to get rabbit config file.
-    parser = argparse.ArgumentParser(description='Begin the rabbit based deposit indexer')
+    parser = argparse.ArgumentParser(description=description)
 
     parser.add_argument('--config', dest='config', help='Path to config file for rabbit connection', required=True)
 
@@ -36,6 +39,13 @@ def consumer_setup(consumer, logger):
     ch.setFormatter(formatter)
 
     logger.addHandler(ch)
+
+    # Load the consumer
+    if not consumer:
+        consumer_class = conf.get('rabbit_server','queue_consumer_class')
+        consumer = locate(consumer_class)
+
+    logger.info(f'Loaded {consumer_class}')
 
     consumer = consumer(conf)
     consumer.run()

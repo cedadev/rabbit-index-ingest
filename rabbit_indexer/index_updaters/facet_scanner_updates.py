@@ -54,11 +54,7 @@ class FacetScannerUpdateHandler(UpdateHandler):
         :return:
         """
 
-        # Kill the running process
-        if message.action == 'JSON_REFRESH':
-            exit()
-
-        elif message.action == 'DEPOSIT':
+        if message.action == 'DEPOSIT':
             self._process_deposits(message)
 
     def _process_deposits(self, message: 'IngestMessage'):
