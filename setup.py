@@ -43,9 +43,6 @@ setup(
         'pyyaml'
     ],
     extras_require={
-        'fbi':[],
-        'dbi':[],
-        'facets':[]
     },
 
     # This qualifier can be used to selectively exclude Python versions -
