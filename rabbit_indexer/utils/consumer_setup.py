@@ -20,7 +20,13 @@ def consumer_setup(consumer=None, description='Begin the rabbit based deposit in
     # Command line arguments to get rabbit config file.
     parser = argparse.ArgumentParser(description=description)
 
-    parser.add_argument('--config', dest='config', help='Path to config file for rabbit connection', required=True)
+    parser.add_argument(
+        '--config',
+        dest='config',
+        help='Path to config file for rabbit connection',
+        nargs='+',
+        required=True
+    )
 
     args = parser.parse_args()
 
@@ -42,7 +48,7 @@ def consumer_setup(consumer=None, description='Begin the rabbit based deposit in
 
     # Load the consumer
     if not consumer:
-        consumer_class = conf.get('rabbit_server','queue_consumer_class')
+        consumer_class = conf.get('rabbit_server', 'queue_consumer_class')
         consumer = locate(consumer_class)
 
     logger.info(f'Loaded {consumer_class}')
