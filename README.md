@@ -32,13 +32,74 @@ You will need to set parameters in the `server` and `elasticsearch` sections.
 1. Activate the environment (On ingest machines this is `rabbit_fbi`)
 2. `rabbit_event_indexer` or `python rabbit_indexer/scripts/queue_handler.py`
 
+## Configuration
 
-# Consistency Checker
+Configuration for the rabbit_indexer is provided by a YAML file. The individual indexers
+define the required sections and give an example template but the full configuration
+options are described below.
 
-Config options
+The file format is split into sections:
+- [rabbit_server](#rabbit_server)
+- [rabbit_indexer](#rabbit-indexer)
+- [logging](#logging)
+- [moles](#moles)
+- [elasticsearch](#elasticsearch)
+- [directory_index](#directory-index)
+- [files_index](#files-index)
 
-| Option             | Description |
-| ------------------ | - |
-| queue-location     | Directory path to queue databases default:  |
-| spot-file          |  |
-| spot-progress-file |  |
+### rabbit_server
+
+| Parameter | Description |
+|-----------|-------------|
+| `name`                    | The FQDN for the rabbitMQ server |
+| `user`                    | Username to log in as |
+| `password`                | Password for login |
+| `vhost`                   | The rabbitMQ namespace |
+| `source_exchange`         | Map of values to define the source exchange as defined by [exchange](#exchange) |
+| `dest_exchange`           | Map of values to define the destination exchange as defined by [exchange](#exchange) |
+| `queues`                  | List of queues to connect to with parameters defined by [queue](#queue)|
+
+#### Exchange
+
+| Parameter | Description |
+|-----------|-------------|
+| name | Name of source exchange |
+| type | Type of source exchange |
+
+#### Queue
+
+| Parameter | Description |
+|-----------|-------------|
+| name      | Name of the queue to connect to |
+| kwargs    | kwargs to provide the [pika.queue_declare](https://pika.readthedocs.io/en/stable/modules/channel.html#pika.channel.Channel.queue_declare) method |
+
+### rabbit_indexer
+
+| Parameter | Description |
+|-----------|-------------|
+| queue_consumer_class | The python path to the consumer class. e.g. rabbit_dbi_elastic_indexer.queue_consumers.DBIQueueConsumer |
+
+### logging
+| Parameter | Description |
+|-----------|-------------|
+| log_level | Set the python logging level |
+
+### moles
+| Parameter | Description |
+|-----------|-------------|
+| moles_obs_map_url | URL to download the observation map |
+
+### elasticsearch
+| Parameter | Description |
+|-----------|-------------|
+| es_api_key | Elasticsearch API key to allow write access to the indices |
+
+### directory_index
+| Parameter | Description |
+|-----------|-------------|
+| name | Name of the Directory index to write to |
+
+### Files Index
+| Parameter | Description |
+|-----------|-------------|
+| name | Name of the Files index to write to |

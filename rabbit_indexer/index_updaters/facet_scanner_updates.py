@@ -35,14 +35,14 @@ class FacetScannerUpdateHandler(UpdateHandler):
 
         # Setup logging
         self.logger = logging.getLogger()
-        logging_level = conf.get('logging', 'log-level')
+        logging_level = conf.get('logging', 'log_level')
         self.logger.setLevel(getattr(logging, logging_level.upper()))
 
         # Get the facet scanner class
         self.facet_scanner = FacetScanner()
 
         # Set up the Elasticsearch connection
-        api_key = conf.get('elasticsearch', 'es-api-key')
+        api_key = conf.get('elasticsearch', 'es_api_key')
         self.index = conf.get('files_index', 'name')
 
         self.es = CEDAElasticsearchClient(headers={'x-api-key': api_key})

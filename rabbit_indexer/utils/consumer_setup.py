@@ -35,7 +35,7 @@ def consumer_setup(consumer=None, description='Begin the rabbit based deposit in
     conf.read(CONFIG_FILE)
 
     # Setup logging
-    logging_level = conf.get('logging', 'log-level')
+    logging_level = conf.get('logging', 'log_level')
     logger.setLevel(getattr(logging, logging_level.upper()))
 
     # Add formatting
@@ -48,7 +48,7 @@ def consumer_setup(consumer=None, description='Begin the rabbit based deposit in
 
     # Load the consumer
     if not consumer:
-        consumer_class = conf.get('rabbit_server', 'queue_consumer_class')
+        consumer_class = conf.get('indexer', 'queue_consumer_class')
         consumer = locate(consumer_class)
 
     logger.info(f'Loaded {consumer_class}')

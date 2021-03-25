@@ -34,7 +34,7 @@ class UpdateHandler(ABC):
     def _setup_logging(self):
 
         self.logger = logging.getLogger()
-        logging_level = self.conf.get('logging', 'log-level')
+        logging_level = self.conf.get('logging', 'log_level')
         self.logger.setLevel(getattr(logging, logging_level.upper()))
 
     def setup_extra(self, path_tools: 'PathTools', refresh_interval: int = 30, **kwargs):
