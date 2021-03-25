@@ -117,9 +117,6 @@ class QueueHandler:
         # Create the credentials object
         credentials = pika.PlainCredentials(rabbit_user, rabbit_password)
 
-        print(self.conf.config)
-        print(rabbit_server, rabbit_user, rabbit_password, rabbit_vhost)
-
         # Start the rabbitMQ connection
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(
