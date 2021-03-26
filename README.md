@@ -20,17 +20,34 @@ This can be done using:
 2. Install the package `pip install -e <path_to_setup.py>`
 
 
-# Setup
+## Setup
 
 This code base requires a config file to setup the rabbit server. This is found
 in `rabbit_indexer/conf/index_updater.ini`
 
 You will need to set parameters in the `server` and `elasticsearch` sections.
 
-# Running
+## Running
 
 1. Activate the environment (On ingest machines this is `rabbit_fbi`)
 2. `rabbit_event_indexer` or `python rabbit_indexer/scripts/queue_handler.py`
+
+### rabbit_event_indexer
+
+Console script which sets up the indexer based on the supplied
+config file. Can be used by downstream indexers.
+
+```
+usage: rabbit_event_indexer [-h] --config CONFIG [CONFIG ...]
+
+Begin the rabbit based deposit indexer
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --config CONFIG [CONFIG ...]
+                        Path to config file for rabbit connection
+
+```
 
 ## Configuration
 
