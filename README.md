@@ -80,43 +80,43 @@ The file format is split into sections:
 
 | Parameter | Description |
 |-----------|-------------|
-| name | Name of source exchange |
-| type | Type of source exchange |
+| `name` | Name of source exchange |
+| `type` | Type of source exchange |
 
 #### Queue
 
 | Parameter | Description |
 |-----------|-------------|
-| name      | Name of the queue to connect to |
-| kwargs    | kwargs to provide the [pika.queue_declare](https://pika.readthedocs.io/en/stable/modules/channel.html#pika.channel.Channel.queue_declare) method |
+| `name`      | Name of the queue to connect to |
+| `kwargs`    | kwargs to provide the [pika.queue_declare](https://pika.readthedocs.io/en/stable/modules/channel.html#pika.channel.Channel.queue_declare) method |
 
 ### rabbit_indexer
 
 | Parameter | Description |
 |-----------|-------------|
-| queue_consumer_class | The python path to the consumer class. e.g. rabbit_dbi_elastic_indexer.queue_consumers.DBIQueueConsumer |
+| `queue_consumer_class` | The python path to the consumer class. e.g. rabbit_dbi_elastic_indexer.queue_consumers.DBIQueueConsumer |
 
 ### logging
 | Parameter | Description |
 |-----------|-------------|
-| log_level | Set the python logging level |
+| `log_level` | Set the python logging level |
 
 ### moles
 | Parameter | Description |
 |-----------|-------------|
-| moles_obs_map_url | URL to download the observation map |
+| `moles_obs_map_url` | URL to download the observation map |
 
 ### elasticsearch
 | Parameter | Description |
 |-----------|-------------|
-| es_api_key | Elasticsearch API key to allow write access to the indices |
+| `es_api_key` | Elasticsearch API key to allow write access to the indices |
 
 ### directory_index
 | Parameter | Description |
 |-----------|-------------|
-| name | Name of the Directory index to write to |
+| `name` | Name of the Directory index to write to |
 
 ### Files Index
 | Parameter | Description |
 |-----------|-------------|
-| name | Name of the Files index to write to |
+| `name` | Name of the Files index to write to |
