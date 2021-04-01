@@ -35,11 +35,17 @@ class QueueHandler:
     Organises the rabbitMQ connection and call back
 
     Class Variables:
+        HANDLER_CLASS: the class to be loaded as the handler
+
+    Instance attributes
         conf: The loaded configuration
+        queue_handler: the instance of the class labelled by HANDLER_CLASS
 
     Parameters:
         conf: A YamlConfig Object
     """
+
+    HANDLER_CLASS = None
 
     @staticmethod
     def decode_message(body: bytes) -> IngestMessage:
@@ -90,7 +96,7 @@ class QueueHandler:
     def __init__(self, conf: YamlConfig):
         """
 
-        :param conf:
+        :param conf: Yaml configuration file
         """
 
         self.conf = conf
@@ -98,6 +104,11 @@ class QueueHandler:
 
         # Init event handlers
         self.get_handlers()
+
+    def get_handlers(self):
+
+        logger.info('Initialising handler')
+        self.queue_handler = self.HANDLER_CLASS(conf=self.conf)
 
     def _connect(self):
         """

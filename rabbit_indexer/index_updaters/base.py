@@ -7,11 +7,11 @@ import time
 import os
 from dateutil.parser import parse
 from abc import ABC, abstractmethod
+from rabbit_indexer.utils import PathTools
 
 # Typing imports
 from typing import TYPE_CHECKING
 if TYPE_CHECKING:
-    from rabbit_indexer.utils import PathTools
     from rabbit_indexer.utils.yaml_config import YamlConfig
     from rabbit_indexer.queue_handler.queue_handler import IngestMessage
 
@@ -28,6 +28,7 @@ class UpdateHandler(ABC):
         :param conf: Configuration file
         """
         self.conf = conf
+        self.pt = None
         self._setup_logging()
         self.setup_extra(**kwargs)
 
@@ -37,7 +38,7 @@ class UpdateHandler(ABC):
         logging_level = self.conf.get('logging', 'log_level')
         self.logger.setLevel(getattr(logging, logging_level.upper()))
 
-    def setup_extra(self, path_tools: 'PathTools', refresh_interval: int = 30, **kwargs):
+    def setup_extra(self, refresh_interval: int = 30, **kwargs):
         """
         Setup extra properties for the handler
         """
@@ -47,6 +48,10 @@ class UpdateHandler(ABC):
         self.refresh_interval = refresh_interval * 60 # convert to seconds
 
         # Initialise Path Tools
+        moles_obs_map_url = self.conf.get("moles", "moles_obs_map_url")
+
+        self.logger.info('Downloading MOLES mapping')
+        path_tools = PathTools(moles_mapping_url=moles_obs_map_url)
         self.pt = path_tools
 
     def _update_mappings(self):
