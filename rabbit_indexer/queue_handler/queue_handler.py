@@ -106,7 +106,6 @@ class QueueHandler:
         self.get_handlers()
 
     def get_handlers(self):
-
         logger.info('Initialising handler')
         self.queue_handler = self.HANDLER_CLASS(conf=self.conf)
 
@@ -203,12 +202,6 @@ class QueueHandler:
         """
 
         raise NotImplementedError
-
-    def get_handlers(self):
-        """
-        Abstract method to load the stream handlers.
-        """
-        return NotImplementedError
 
     def run(self):
         """
