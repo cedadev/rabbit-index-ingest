@@ -33,6 +33,9 @@ class UpdateHandler(ABC):
         self.setup_extra(**kwargs)
 
     def _setup_logging(self):
+        """
+        Setup logging handler
+        """
 
         self.logger = logging.getLogger()
         logging_level = self.conf.get('logging', 'log_level')
