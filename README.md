@@ -57,7 +57,7 @@ options are described below.
 
 The file format is split into sections:
 - [rabbit_server](#rabbit_server)
-- [rabbit_indexer](#rabbit-indexer)
+- [indexer](#indexer)
 - [logging](#logging)
 - [moles](#moles)
 - [elasticsearch](#elasticsearch)
@@ -89,12 +89,14 @@ The file format is split into sections:
 |-----------|-------------|
 | `name`      | Name of the queue to connect to |
 | `kwargs`    | kwargs to provide the [pika.queue_declare](https://pika.readthedocs.io/en/stable/modules/channel.html#pika.channel.Channel.queue_declare) method |
+| `bind_kwargs` | kwargs to provide to the [pika.queue_bind](https://pika.readthedocs.io/en/stable/modules/channel.html#pika.channel.Channel.queue_bind)
 
-### rabbit_indexer
+### indexer
 
 | Parameter | Description |
 |-----------|-------------|
 | `queue_consumer_class` | The python path to the consumer class. e.g. rabbit_dbi_elastic_indexer.queue_consumers.DBIQueueConsumer |
+| `path_filter` | kwargs for the [rabbit_indexer.utils.PathFilter](rabbit_indexer/utils/path_tools.py#L216)  |
 
 ### logging
 | Parameter | Description |

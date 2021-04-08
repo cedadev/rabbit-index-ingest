@@ -48,10 +48,10 @@ def consumer_setup(consumer=None, description='Begin the rabbit based deposit in
 
     # Load the consumer
     if not consumer:
-        consumer_class = conf.get('indexer', 'queue_consumer_class')
-        consumer = locate(consumer_class)
+        consumer = conf.get('indexer', 'queue_consumer_class')
+        consumer = locate(consumer)
 
-    logger.info(f'Loaded {consumer_class}')
+    logger.info(f'Loaded {consumer}')
 
     consumer = consumer(conf)
     consumer.run()

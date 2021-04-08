@@ -155,8 +155,12 @@ class QueueHandler:
         # Declare queue and bind queue to the dest exchange
         queues = self.conf.get('rabbit_server', 'queues')
         for queue in queues:
-            channel.queue_declare(queue=queue['name'], **queue['kwargs'])
-            channel.queue_bind(exchange=dest_exchange['name'], queue=queue['name'])
+
+            declare_kwargs = queue.get('kwargs',{})
+            bind_kwargs = queue.get('bind_kwargs',{})
+
+            channel.queue_declare(queue=queue['name'], **declare_kwargs)
+            channel.queue_bind(exchange=dest_exchange['name'], queue=queue['name'], **bind_kwargs)
 
             # Set callback
             callback = functools.partial(self.callback, connection=connection)
