@@ -96,7 +96,7 @@ The file format is split into sections:
 | Parameter | Description |
 |-----------|-------------|
 | `queue_consumer_class` | The python path to the consumer class. e.g. rabbit_dbi_elastic_indexer.queue_consumers.DBIQueueConsumer |
-| `path_filter` | kwargs for the [rabbit_indexer.utils.PathFilter](rabbit_indexer/utils/path_tools.py#L216)  |
+| `path_filter` | kwargs for the [rabbit_indexer.utils.PathFilter](rabbit_indexer/utils/path_tools.py#L235)  |
 
 ### logging
 | Parameter | Description |
