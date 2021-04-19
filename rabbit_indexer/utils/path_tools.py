@@ -33,6 +33,10 @@ def process_observations(results):
         if result.get('publicationState') == 'working':
             continue
 
+        # Skip where the result_field value is None
+        if result['result_field'] is None:
+            continue
+
         data_path = result['result_field']['dataPath'].rstrip('/')
 
         try:
