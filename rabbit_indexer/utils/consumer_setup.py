@@ -9,24 +9,33 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 import argparse
-import configparser
 import logging
+from .yaml_config import YamlConfig
+from pydoc import locate
+
+logger = logging.getLogger(__name__)
 
 
-def consumer_setup(consumer, logger):
+def consumer_setup(consumer=None, description='Begin the rabbit based deposit indexer'):
     # Command line arguments to get rabbit config file.
-    parser = argparse.ArgumentParser(description='Begin the rabbit based deposit indexer')
+    parser = argparse.ArgumentParser(description=description)
 
-    parser.add_argument('--config', dest='config', help='Path to config file for rabbit connection', required=True)
+    parser.add_argument(
+        '--config',
+        dest='config',
+        help='Path to config file for rabbit connection',
+        nargs='+',
+        required=True
+    )
 
     args = parser.parse_args()
 
     CONFIG_FILE = args.config
-    conf = configparser.RawConfigParser()
+    conf = YamlConfig()
     conf.read(CONFIG_FILE)
 
     # Setup logging
-    logging_level = conf.get('logging', 'log-level')
+    logging_level = conf.get('logging', 'log_level')
     logger.setLevel(getattr(logging, logging_level.upper()))
 
     # Add formatting
@@ -36,6 +45,13 @@ def consumer_setup(consumer, logger):
     ch.setFormatter(formatter)
 
     logger.addHandler(ch)
+
+    # Load the consumer
+    if not consumer:
+        consumer = conf.get('indexer', 'queue_consumer_class')
+        consumer = locate(consumer)
+
+    logger.info(f'Loaded {consumer}')
 
     consumer = consumer(conf)
     consumer.run()

@@ -9,16 +9,13 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 import pika
-from rabbit_indexer.utils import PathTools
-from rabbit_indexer.index_updaters import FBSUpdateHandler
-from rabbit_indexer.index_updaters import DirectoryUpdateHandler
+from rabbit_indexer.utils import YamlConfig
 import logging
 import functools
 from collections import namedtuple
 import json
 
 # Typing imports
-from configparser import RawConfigParser
 from pika.channel import Channel
 from pika.connection import Connection
 from pika.frame import Method
@@ -35,8 +32,20 @@ IngestMessage = namedtuple('IngestMessage',['datetime','filepath','action','file
 
 class QueueHandler:
     """
-    Organises the thread pool and callbacks for the Rabbit Messages
+    Organises the rabbitMQ connection and call back
+
+    Class Variables:
+        HANDLER_CLASS: the class to be loaded as the handler
+
+    Instance attributes
+        conf: The loaded configuration
+        queue_handler: the instance of the class labelled by HANDLER_CLASS
+
+    Parameters:
+        conf: A YamlConfig Object
     """
+
+    HANDLER_CLASS = None
 
     @staticmethod
     def decode_message(body: bytes) -> IngestMessage:
@@ -84,41 +93,21 @@ class QueueHandler:
 
         return IngestMessage(**msg)
 
-    def __init__(self, conf: RawConfigParser):
+    def __init__(self, conf: YamlConfig):
+        """
 
-        # Get the username and password for rabbit
-        rabbit_user = conf.get('server', 'user')
-        rabbit_password = conf.get('server', 'password')
+        :param conf: Yaml configuration file
+        """
 
-        # Get moles api url
-        moles_obs_map_url = conf.get("moles", "moles_obs_map_url")
-
-        # Get the server variables
-        self.rabbit_server = conf.get('server', 'name')
-        self.rabbit_vhost = conf.get('server', 'vhost')
-
-        # Create the credentials object
-        self.credentials = pika.PlainCredentials(rabbit_user, rabbit_password)
-
-        # Set other shared attributes
-        self.log_exchange = conf.get('server', 'log_exchange')
-        self.fbi_exchange = conf.get('server', 'fbi_exchange')
-        self.queue_name = conf.get('server', 'queue')
-        self.path_tools = PathTools(moles_mapping_url=moles_obs_map_url)
-        self.processing_stop = False
-
-        self._conf = conf
+        self.conf = conf
+        self.queue_handler = None
 
         # Init event handlers
-        self._get_handlers()
+        self.get_handlers()
 
-    def _get_handlers(self):
-        """
-        Get the stream handlers. Method to allow subclasses to modify which handlers to load.
-        """
-
-        self.directory_handler = DirectoryUpdateHandler(path_tools=self.path_tools, conf=self._conf)
-        self.fbs_handler = FBSUpdateHandler(path_tools=self.path_tools, conf=self._conf)
+    def get_handlers(self):
+        logger.info('Initialising handler')
+        self.queue_handler = self.HANDLER_CLASS(conf=self.conf)
 
     def _connect(self):
         """
@@ -127,34 +116,55 @@ class QueueHandler:
         :return: pika channel
         """
 
+        # Get the username and password for rabbit
+        rabbit_user = self.conf.get('rabbit_server', 'user')
+        rabbit_password = self.conf.get('rabbit_server', 'password')
+
+        # Get the server variables
+        rabbit_server = self.conf.get('rabbit_server', 'name')
+        rabbit_vhost = self.conf.get('rabbit_server', 'vhost')
+
+        # Create the credentials object
+        credentials = pika.PlainCredentials(rabbit_user, rabbit_password)
+
         # Start the rabbitMQ connection
         connection = pika.BlockingConnection(
             pika.ConnectionParameters(
-                self.rabbit_server,
-                credentials=self.credentials,
-                virtual_host=self.rabbit_vhost,
+                host=rabbit_server,
+                credentials=credentials,
+                virtual_host=rabbit_vhost,
                 heartbeat=300
             )
         )
+
+        # Get the exchanges to bind
+        src_exchange = self.conf.get('rabbit_server', 'source_exchange')
+        dest_exchange = self.conf.get('rabbit_server', 'dest_exchange')
 
         # Create a new channel
         channel = connection.channel()
         channel.basic_qos(prefetch_count=1)
 
         # Declare relevant exchanges
-        channel.exchange_declare(exchange=self.log_exchange, exchange_type='fanout')
-        channel.exchange_declare(exchange=self.fbi_exchange, exchange_type='fanout')
+        channel.exchange_declare(exchange=src_exchange['name'], exchange_type=src_exchange['type'])
+        channel.exchange_declare(exchange=dest_exchange['name'], exchange_type=dest_exchange['type'])
 
-        # Bind fbi exchange to log exchange
-        channel.exchange_bind(destination=self.fbi_exchange, source=self.log_exchange)
+        # Bind source exchange to dest exchange
+        channel.exchange_bind(destination=dest_exchange['name'], source=src_exchange['name'])
 
-        # Declare queue and bind queue to the fbi exchange
-        channel.queue_declare(queue=self.queue_name, auto_delete=False)
-        channel.queue_bind(exchange=self.fbi_exchange, queue=self.queue_name)
+        # Declare queue and bind queue to the dest exchange
+        queues = self.conf.get('rabbit_server', 'queues')
+        for queue in queues:
 
-        # Set callback
-        callback = functools.partial(self.callback, connection=connection)
-        channel.basic_consume(queue=self.queue_name, on_message_callback=callback, auto_ack=False)
+            declare_kwargs = queue.get('kwargs',{})
+            bind_kwargs = queue.get('bind_kwargs',{})
+
+            channel.queue_declare(queue=queue['name'], **declare_kwargs)
+            channel.queue_bind(exchange=dest_exchange['name'], queue=queue['name'], **bind_kwargs)
+
+            # Set callback
+            callback = functools.partial(self.callback, connection=connection)
+            channel.basic_consume(queue=queue['name'], on_message_callback=callback, auto_ack=False)
 
         return channel
 
@@ -175,6 +185,7 @@ class QueueHandler:
         """
         Acknowledge message and move onto the next. All of the required
         params come from the message callback params.
+
         :param channel: callback channel param
         :param delivery_tag: from the callback method param. eg. method.delivery_tag
         :param connection: connection object from the callback param
@@ -184,7 +195,7 @@ class QueueHandler:
 
     def callback(self, ch: Channel, method: Method, properties: Header, body: bytes, connection: Connection):
         """
-        Callback to run during basic consume routine.
+        Abstract method to define the callback to run during basic consume routine.
         Arguments provided by pika standard message callback method
 
         :param ch: Channel
@@ -198,10 +209,12 @@ class QueueHandler:
 
     def run(self):
         """
-        Method to run when thread is started. Creates an AMQP connection for each thread
+        Method to run when thread is started. Creates an AMQP connection
         and sets some exception handling.
 
-        A common exception which occurs is StreamLostError. The connection should get reset if that happens.
+        A common exception which occurs is StreamLostError.
+        The connection should get reset if that happens.
+
         :return:
         """
 
@@ -209,6 +222,7 @@ class QueueHandler:
             channel = self._connect()
 
             try:
+                logger.info('READY')
                 channel.start_consuming()
 
             except KeyboardInterrupt:

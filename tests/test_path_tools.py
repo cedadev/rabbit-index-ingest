@@ -13,7 +13,7 @@ import unittest
 import os
 import json
 
-from rabbit_indexer.utils import PathTools
+from rabbit_indexer.utils import PathTools, PathFilter
 
 
 def get_local_path():
@@ -42,7 +42,7 @@ class PathToolsTestCase(TestCase):
             '/badc/cmip5/data',
             '/neodc/avhrr-3'
         ]
-        files = [('/badc/cmip5/00README','5th Coupled Model Intercomparison Project (CMIP5)\n', 'utf-8'),
+        files = [('/badc/cmip5/00README', '5th Coupled Model Intercomparison Project (CMIP5)\n', 'utf-8'),
                  ('/neodc/avhrr-3/00README', '(51.1445°N, 1.4370°W)', 'iso-8859-1'),
                  ]
 
@@ -51,6 +51,17 @@ class PathToolsTestCase(TestCase):
 
         for _file, content, encoding in files:
             self.fs.create_file(_file, contents=content, encoding=encoding)
+
+    def test_tree_match(self):
+
+        paths = [
+            ('/neodc/avhrr-3', False),
+            ('/badc/cmip5/data', True)
+        ]
+
+        for path, expected in paths:
+            match = self.path_tools.tree.search_name(path)
+            self.assertEqual(bool(match), expected)
 
     def test_generate_path_metadata(self):
 
@@ -121,6 +132,73 @@ class PathToolsTestCase(TestCase):
 
         hash = self.path_tools.generate_id('test_tree/badc/cmip5')
         self.assertEqual('5174fa172be7d29d15fb0a2a09e7d600375585d9', hash)
+
+
+class PathFilterTestCase(TestCase):
+
+    def test_allow_deny_filter(self):
+        filter_paths = ['/neodc/esacci']
+        filter = PathFilter(paths=filter_paths, filter_policy=PathFilter.ALLOW_FILTER_DENY)
+
+        test_paths = [
+            ('/neodc/sentinel1b/data/TC_Sentinel_Data_31072014.pdf', True),
+            ('/neodc/esacci/biomass/data/agb/maps/v2.0/00README_catalogue_and_licence.txt', False)
+        ]
+
+        for test_path, expected in test_paths:
+            match = filter.allow_path(test_path)
+
+            self.assertEqual(match, expected)
+
+    def test_allow_all(self):
+        filter = PathFilter(filter_policy=PathFilter.ALLOW_FILTER_DENY)
+
+        test_paths = [
+            ('/neodc/sentinel1b/data/TC_Sentinel_Data_31072014.pdf', True),
+            ('/neodc/esacci/biomass/data/agb/maps/v2.0/00README_catalogue_and_licence.txt', True)
+        ]
+
+        for test_path, expected in test_paths:
+            match = filter.allow_path(test_path)
+
+            self.assertEqual(match, expected)
+
+
+    def test_error_raised_on_invalid_mode(self):
+
+        with self.assertRaises(ValueError):
+            PathFilter(filter_policy=3)
+
+    def test_deny_allow_filter(self):
+        filter_paths = ['/neodc/esacci']
+        filter = PathFilter(paths=filter_paths, filter_policy=PathFilter.DENY_FILTER_ALLOW)
+
+        test_paths = [
+            ('/neodc/sentinel1b/data/TC_Sentinel_Data_31072014.pdf', False),
+            ('/neodc/esacci/biomass/data/agb/maps/v2.0/00README_catalogue_and_licence.txt', True)
+        ]
+
+        for test_path, expected in test_paths:
+            match = filter.allow_path(test_path)
+
+            self.assertEqual(match, expected)
+
+    def test_deny_all(self):
+        filter = PathFilter(filter_policy=PathFilter.DENY_FILTER_ALLOW)
+
+        test_paths = [
+            ('/neodc/sentinel1b/data/TC_Sentinel_Data_31072014.pdf', False),
+            ('/neodc/esacci/biomass/data/agb/maps/v2.0/00README_catalogue_and_licence.txt', False)
+        ]
+
+        for test_path, expected in test_paths:
+            match = filter.allow_path(test_path)
+
+            self.assertEqual(match, expected)
+
+
+
+
 
 
 if __name__ == '__main__':
