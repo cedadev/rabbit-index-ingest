@@ -6,9 +6,9 @@ DEPOSIT and REMOVE actions are sent to the `ceda-fbi` index and MKDIR, RMDIR, SY
 are sent to the `ceda-dirs` index. 
 This is to ensure that the content of the indices matches the archive for use with the archive_browser.
 This repo serves as a base repo for the downstream specific handlers:
-[Facet Scanner](https://github.com/cedadev/rabbit_facet_scanner)
-[DBI Indexer](https://github.com/cedadev/rabbit-dbi-indexer)
-[FBI Indexer](https://github.com/cedadev/rabbit-fbi-indexer)
+- [Facet Scanner](https://github.com/cedadev/rabbit_facet_scanner)
+- [DBI Indexer](https://github.com/cedadev/rabbit-dbi-indexer)
+- [FBI Indexer](https://github.com/cedadev/rabbit-fbi-indexer)
 
 The diagram below is a rough sketch of how the events from the deposit server are picked up by this library.
 
