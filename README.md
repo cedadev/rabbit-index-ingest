@@ -5,6 +5,10 @@ These messages are parsed and handlers and initialised to process the events.
 DEPOSIT and REMOVE actions are sent to the `ceda-fbi` index and MKDIR, RMDIR, SYMLINK and 00README actions
 are sent to the `ceda-dirs` index. 
 This is to ensure that the content of the indices matches the archive for use with the archive_browser.
+This repo serves as a base repo for the downstream specific handlers:
+[Facet Scanner](https://github.com/cedadev/rabbit_facet_scanner)
+[DBI Indexer](https://github.com/cedadev/rabbit-dbi-indexer)
+[FBI Indexer](https://github.com/cedadev/rabbit-fbi-indexer)
 
 The diagram below is a rough sketch of how the events from the deposit server are picked up by this library.
 
@@ -20,17 +24,10 @@ This can be done using:
 2. Install the package `pip install -e <path_to_setup.py>`
 
 
-## Setup
-
-This code base requires a config file to setup the rabbit server. This is found
-in `rabbit_indexer/conf/index_updater.ini`
-
-You will need to set parameters in the `server` and `elasticsearch` sections.
-
 ## Running
 
 1. Activate the environment (On ingest machines this is `rabbit_fbi`)
-2. `rabbit_event_indexer` or `python rabbit_indexer/scripts/queue_handler.py`
+2. `rabbit_event_indexer`
 
 ### rabbit_event_indexer
 
