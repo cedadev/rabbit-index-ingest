@@ -198,12 +198,15 @@ class PathTools:
             return response.json()
 
     @staticmethod
-    def get_readme(path: str) -> str:
+    def get_readme(path: str) -> Optional[str]:
         """
         Search in directory for a README file and read the contents
         :param path: Directory path
         :return: Readme contents
         """
+        if not os.path.exists(path):
+            return
+
         if '00README' in os.listdir(path):
             with open(os.path.join(path, '00README'), errors='replace') as reader:
                 content = reader.read()
