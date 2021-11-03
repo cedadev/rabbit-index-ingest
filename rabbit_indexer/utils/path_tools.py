@@ -123,11 +123,12 @@ class PathTools:
         :param path: path to retrieve metadata for
         :return:
         """
-        if not os.path.isdir(path):
+        if not os.path.exists(path):
             return None, None
 
-        # See if the path is a symlink
+        # See if the path is a symlink and directory
         link = os.path.islink(path)
+        isdir = os.path.isdir(path)
 
         # Set the archive path
         archive_path = path
@@ -137,25 +138,26 @@ class PathTools:
             archive_path = self.spots.get_archive_path(path)
 
         # Create the metadata
-        dir_meta = {
+        meta = {
             'depth': path.count('/'),
             'dir': os.path.basename(path),
             'path': path,
             'archive_path': archive_path,
             'link': link,
-            'type': 'dir'
+            'type': 'dir' if isdir else 'file'
         }
 
         # Retrieve the appropriate MOLES record
-        record = self.get_moles_record_metadata(path)
+        if isdir:
+            record = self.get_moles_record_metadata(path)
 
-        # If a MOLES record is found, add the metadata
-        if record and record['title']:
-            dir_meta['title'] = record['title']
-            dir_meta['url'] = record['url']
-            dir_meta['record_type'] = record['record_type']
+            # If a MOLES record is found, add the metadata
+            if record and record['title']:
+                meta['title'] = record['title']
+                meta['url'] = record['url']
+                meta['record_type'] = record['record_type']
 
-        return dir_meta, dir_meta['link']
+        return meta, meta['link']
 
     def get_moles_record_metadata(self, path: str) -> Optional[dict]:
         """
