@@ -27,10 +27,10 @@ class UpdateHandler(ABC):
 
         :param conf: Configuration file
         """
-        self.logger.info('Initialising rabbitmq consumer')
         self.conf = conf
         self.pt = None
         self._setup_logging()
+        self.logger.info('Initialising rabbitmq consumer')
         self.setup_extra(**kwargs)
 
     def _setup_logging(self):
