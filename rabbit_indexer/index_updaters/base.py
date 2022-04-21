@@ -27,6 +27,7 @@ class UpdateHandler(ABC):
 
         :param conf: Configuration file
         """
+        self.logger.info('Initialising rabbitmq consumer')
         self.conf = conf
         self.pt = None
         self._setup_logging()
@@ -47,6 +48,7 @@ class UpdateHandler(ABC):
         """
 
         # Initialise update counter
+        self.logger.info('Initialising update counter with refresh_interval: {}'.format(refresh_interval))
         self.update_time = datetime.now()
         self.refresh_interval = refresh_interval * 60 # convert to seconds
 
