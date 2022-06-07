@@ -105,8 +105,6 @@ class PathTools:
 
         self.moles_mapping_url = moles_mapping_url
 
-        self.spots = SpotMapping()
-
         if mapping_file:
             self.moles_mapping = load_moles_mapping(mapping_file)
         else:
