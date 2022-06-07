@@ -7,7 +7,7 @@ __copyright__ = 'Copyright 2018 United Kingdom Research and Innovation'
 __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
-from ceda_elasticsearch_tools.core.log_reader import SpotMapping
+from pathlib import Path
 import os
 import requests
 from json.decoder import JSONDecodeError
@@ -123,26 +123,36 @@ class PathTools:
         :param path: path to retrieve metadata for
         :return:
         """
-        if not os.path.exists(path):
+
+        path = Path(path)
+
+        if not path.exists():
             return None, None
 
         # See if the path is a symlink and directory
-        link = os.path.islink(path)
-        isdir = os.path.isdir(path)
+        link = path.is_symlink()
+        isdir = path.is_dir()
 
         # Set the archive path
         archive_path = path
 
         # If the path is a link, we need to find the path to the actual data
         if link:
-            archive_path = self.spots.get_archive_path(path)
+            link_path = os.readlink(path)
+            if not link_path.startswith(("/datacentre", "..")):
+                archive_path = link_path
+            elif link_path.startswith(".."):
+                count = link_path.count("../")
+                link_path = link_path.lstrip("./")
+                archive_path = path.parents[count] / link_path
+
 
         # Create the metadata
         meta = {
-            'depth': path.count('/'),
-            'dir': os.path.basename(path),
-            'path': path,
-            'archive_path': archive_path,
+            'depth': len(path.parts) - 1,
+            'dir': path.name,
+            'path': str(path),
+            'archive_path': str(archive_path),
             'link': link,
             'type': 'dir' if isdir else 'file'
         }
@@ -223,9 +233,6 @@ class PathTools:
             self.moles_mapping = requests.get(self.moles_mapping_url, timeout=30).json()
         except (ValueError, Timeout):
             successful = False
-
-        # Update the spot mapping
-        self.spots = SpotMapping()
 
         return successful
 
