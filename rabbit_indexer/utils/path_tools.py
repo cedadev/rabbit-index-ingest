@@ -8,7 +8,6 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 from pathlib import Path
-from ceda_elasticsearch_tools.core.log_reader import SpotMapping
 import os
 import requests
 from json.decoder import JSONDecodeError
@@ -234,9 +233,6 @@ class PathTools:
             self.moles_mapping = requests.get(self.moles_mapping_url, timeout=30).json()
         except (ValueError, Timeout):
             successful = False
-
-        # Update the spot mapping
-        self.spots = SpotMapping()
 
         return successful
 
