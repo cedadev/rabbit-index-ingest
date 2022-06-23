@@ -35,16 +35,10 @@ def consumer_setup(consumer=None, description='Begin the rabbit based deposit in
     conf.read(CONFIG_FILE)
 
     # Setup logging
-    logging_level = conf.get('logging', 'log_level')
-    logger.setLevel(getattr(logging, logging_level.upper()))
+    log_level_str = conf.get('logging', 'log_level', default='info')
+    log_level = getattr(logging, log_level_str.upper())
 
-    # Add formatting
-    ch = logging.StreamHandler()
-    ch.setLevel(getattr(logging, logging_level.upper()))
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    ch.setFormatter(formatter)
-
-    logger.addHandler(ch)
+    logging.basicConfig(format='%(asctime)s @%(name)s [%(levelname)s]:    %(message)s', level=log_level)
 
     # Load the consumer
     if not consumer:

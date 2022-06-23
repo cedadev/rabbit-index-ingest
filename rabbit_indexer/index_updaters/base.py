@@ -38,9 +38,11 @@ class UpdateHandler(ABC):
         Setup logging handler
         """
 
-        self.logger = logging.getLogger()
-        logging_level = self.conf.get('logging', 'log_level')
-        self.logger.setLevel(getattr(logging, logging_level.upper()))
+        log_level_str = self.conf.get('logging', 'log_level', default='info')
+        log_level = getattr(logging, log_level_str.upper())
+        
+        self.logger = logging.getLogger(__name__)
+        self.logger.setLevel(log_level)
 
     def setup_extra(self, refresh_interval: int = 30, **kwargs):
         """
