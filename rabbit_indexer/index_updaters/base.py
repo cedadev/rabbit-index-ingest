@@ -38,12 +38,11 @@ class UpdateHandler(ABC):
         Setup logging handler
         """
 
-        logging_level = self.conf.get('logging', {}).get('log_level', 'info')
-        level = getattr(logging, logging_level.upper())
-        logging.basicConfig(format='%(asctime)s @%(name)s [%(levelname)s]:    %(message)s', level=level)
+        log_level_str = self.conf.get('logging', {}).get('log_level', 'info')
+        log_level = getattr(logging, log_level_str.upper())
         
         self.logger = logging.getLogger(__name__)
-        self.logger.setLevel(level)
+        self.logger.setLevel(log_level)
 
     def setup_extra(self, refresh_interval: int = 30, **kwargs):
         """
