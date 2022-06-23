@@ -35,7 +35,7 @@ def consumer_setup(consumer=None, description='Begin the rabbit based deposit in
     conf.read(CONFIG_FILE)
 
     # Setup logging
-    log_level_str = conf.get('logging', {}).get('log_level', 'info')
+    log_level_str = conf.get('logging', 'log_level', default='info')
     log_level = getattr(logging, log_level_str.upper())
 
     logging.basicConfig(format='%(asctime)s @%(name)s [%(levelname)s]:    %(message)s', level=log_level)
