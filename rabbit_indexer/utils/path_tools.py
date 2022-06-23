@@ -157,7 +157,7 @@ class PathTools:
 
         # Retrieve the appropriate MOLES record
         if isdir:
-            record = self.get_moles_record_metadata(path)
+            record = self.get_moles_record_metadata(str(path))
 
             # If a MOLES record is found, add the metadata
             if record and record['title']:
