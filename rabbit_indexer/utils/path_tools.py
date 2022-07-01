@@ -8,6 +8,7 @@ __license__ = 'BSD - see LICENSE file in top-level package directory'
 __contact__ = 'richard.d.smith@stfc.ac.uk'
 
 from pathlib import Path
+from ceda_elasticsearch_tools.core.log_reader import SpotMapping
 import os
 import requests
 from json.decoder import JSONDecodeError
@@ -102,6 +103,8 @@ class PathTools:
     def __init__(self,
                  moles_mapping_url: str = 'http://api.catalogue.ceda.ac.uk/api/v2/observations.json/',
                  mapping_file: Optional[str] = None):
+        
+        self.spots = SpotMapping()
 
         self.moles_mapping_url = moles_mapping_url
 
@@ -228,6 +231,7 @@ class PathTools:
         successful = True
         # Update the moles mapping
         try:
+            self.spots._download_mapping()
             self.moles_mapping = requests.get(self.moles_mapping_url, timeout=30).json()
         except (ValueError, Timeout):
             successful = False
